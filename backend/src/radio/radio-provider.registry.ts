@@ -1,9 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { BaseRadioProvider } from './providers/base-radio-provider';
 import { RadioBrowserProvider } from './providers/radio-browser.provider';
 import { RadioNetProvider } from './providers/radionet.provider';
+import { RadioplayerProvider } from './providers/radioplayer.provider';
 import { ShoutcastProvider } from './providers/shoutcast.provider';
-import { BaseRadioProvider } from './providers/base-radio-provider';
 import { RadioProviderConfig, RadioProviderName, RadioProviderStatus } from './types/radio-search.types';
 
 @Injectable()
@@ -17,7 +18,8 @@ export class RadioProviderRegistry implements OnModuleInit {
     private readonly radioBrowserProvider: RadioBrowserProvider,
     private readonly radioNetProvider: RadioNetProvider,
     private readonly shoutcastProvider: ShoutcastProvider,
-  ) {}
+    private readonly radioplayerProvider: RadioplayerProvider,
+  ) { }
 
   onModuleInit() {
     const providersConfig = this.configService.get('radioProviders.providers');
@@ -26,13 +28,14 @@ export class RadioProviderRegistry implements OnModuleInit {
     this.registerProvider('radio_browser', this.radioBrowserProvider);
     this.registerProvider('radionet', this.radioNetProvider);
     this.registerProvider('shoutcast', this.shoutcastProvider);
+    this.registerProvider('radioplayer', this.radioplayerProvider);
 
     this.logger.log(`Initialized ${this.providerInstances.size} radio providers`);
   }
 
   getEnabledProviders(requested?: string[]): BaseRadioProvider[] {
-    const requestedSet = requested?.length 
-      ? new Set(requested.map((p) => p as RadioProviderName)) 
+    const requestedSet = requested?.length
+      ? new Set(requested.map((p) => p as RadioProviderName))
       : null;
 
     return Array.from(this.providerInstances.entries())
@@ -42,7 +45,7 @@ export class RadioProviderRegistry implements OnModuleInit {
         if (requestedSet && !requestedSet.has(name)) return false;
         return true;
       })
-      .sort((a, b) => 
+      .sort((a, b) =>
         (this.providerConfigs[a[0]].priority || 99) - (this.providerConfigs[b[0]].priority || 99)
       )
       .map(([, instance]) => instance);
@@ -98,6 +101,12 @@ export class RadioProviderRegistry implements OnModuleInit {
       shoutcast: {
         enabled: true,
         priority: 3,
+        timeoutMs: 10000,
+        cacheTtlMs: 3600000,
+      },
+      radioplayer: {
+        enabled: true,
+        priority: 4,
         timeoutMs: 10000,
         cacheTtlMs: 3600000,
       },

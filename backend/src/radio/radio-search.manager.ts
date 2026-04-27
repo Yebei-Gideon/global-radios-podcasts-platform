@@ -1,7 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
 import { SearchQueryDto } from '../common/dto/pagination.dto';
 import { RadioProviderRegistry } from './radio-provider.registry';
 import { ProviderRadioResult, RadioProviderName } from './types/radio-search.types';
@@ -14,7 +14,7 @@ export class RadioSearchManager {
     private readonly providerRegistry: RadioProviderRegistry,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+  ) { }
 
   async search(searchDto: SearchQueryDto): Promise<ProviderRadioResult[]> {
     const query = searchDto.query?.trim();
@@ -76,9 +76,12 @@ export class RadioSearchManager {
     const sorted = this.sortResultsByPriority(deduped);
     const final = sorted.slice(0, limit); // Apply final limit
 
-    const cacheTtl =
-      this.configService.get<number>('radioProviders.search.cacheTtlMs') || 3600_000;
-    await this.cacheManager.set(cacheKey, final, cacheTtl);
+    // Only cache if we have results to avoid caching empty results from failed providers
+    if (final.length > 0) {
+      const cacheTtl =
+        this.configService.get<number>('radioProviders.search.cacheTtlMs') || 3600_000;
+      await this.cacheManager.set(cacheKey, final, cacheTtl);
+    }
 
     this.logger.log(`Radio search returned ${final.length} stations from ${providers.length} providers`);
     return final;

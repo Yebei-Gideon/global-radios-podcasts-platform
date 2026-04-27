@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 
 /**
@@ -26,7 +26,7 @@ export class RadioBrowserService {
   private createAxios(baseURL: string): AxiosInstance {
     return axios.create({
       baseURL,
-      timeout: 10000,
+      timeout: 20000,
       headers: {
         'User-Agent': 'RadioPlatform/1.0', // Required by Radio Browser API
       },
@@ -76,9 +76,20 @@ export class RadioBrowserService {
     tag?: string;
     order?: string;
   }): Promise<any[]> {
+    const limit = params.limit || 20;
+    const offset = params.offset || 0;
+
+    // If no filters and offset is 0, use the topvote endpoint for better performance
+    if (!params.name && !params.country && !params.language && !params.tag && offset === 0) {
+      const endpoint = `/json/stations/topvote/${limit}`;
+      this.logger.debug(`Fetching top stations from Radio Browser: ${endpoint}`);
+      return this.requestWithFallback<any[]>(endpoint);
+    }
+
+    // Otherwise, use search endpoint
     const queryParams: any = {
-      limit: params.limit || 20,
-      offset: params.offset || 0,
+      limit,
+      offset,
       order: params.order || 'votes', // Sort by popularity by default
       reverse: 'true', // Most popular first
     };
@@ -130,5 +141,13 @@ export class RadioBrowserService {
     const endpoint = `/json/stations/byuuid/${uuid}`;
     const data = await this.requestWithFallback<any[]>(endpoint);
     return data[0];
+  }
+
+  /**
+   * Get statistics about the Radio Browser database
+   */
+  async fetchStats(): Promise<any> {
+    const endpoint = '/json/stats';
+    return this.requestWithFallback<any>(endpoint);
   }
 }

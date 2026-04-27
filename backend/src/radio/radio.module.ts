@@ -1,16 +1,17 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { RadioController } from './radio.controller';
-import { RadioService } from './radio.service';
-import { RadioBrowserService } from './radio-browser.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import radioConfig from '../config/radio.config';
 import { RadioStation } from './entities/radio-station.entity';
-import { RadioSearchManager } from './radio-search.manager';
-import { RadioProviderRegistry } from './radio-provider.registry';
 import { RadioBrowserProvider } from './providers/radio-browser.provider';
 import { RadioNetProvider } from './providers/radionet.provider';
+import { RadioplayerProvider } from './providers/radioplayer.provider';
 import { ShoutcastProvider } from './providers/shoutcast.provider';
-import radioConfig from '../config/radio.config';
+import { RadioBrowserService } from './radio-browser.service';
+import { RadioProviderRegistry } from './radio-provider.registry';
+import { RadioSearchManager } from './radio-search.manager';
+import { RadioController } from './radio.controller';
+import { RadioService } from './radio.service';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import radioConfig from '../config/radio.config';
     RadioBrowserProvider,
     RadioNetProvider,
     ShoutcastProvider,
+    RadioplayerProvider,
   ],
   exports: [RadioService, RadioSearchManager], // Export for future modules
 })
-export class RadioModule {}
+export class RadioModule { }

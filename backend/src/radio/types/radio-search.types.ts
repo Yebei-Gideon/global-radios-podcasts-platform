@@ -1,4 +1,4 @@
-export type RadioProviderName = 'radio_browser' | 'radionet' | 'shoutcast';
+export type RadioProviderName = 'radio_browser' | 'radionet' | 'shoutcast' | 'radioplayer';
 
 export interface RadioProviderConfig {
   enabled: boolean;
