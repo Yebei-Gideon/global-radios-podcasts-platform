@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Radio as RadioIcon, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
-import { apiService } from '@/services/api.service';
-import type { RadioStation } from '../types/radio.types';
-import { ModernStationCard } from '../components/ModernStationCard';
 import { Button, Card } from '@/modules/shared/components/ui';
+import { apiService } from '@/services/api.service';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, CheckCircle, MapPin, Radio as RadioIcon, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ModernStationCard } from '../components/ModernStationCard';
+import type { RadioStation } from '../types/radio.types';
 
 interface LocationState {
   country: string | null;
@@ -23,7 +23,6 @@ export const HomePage: React.FC = () => {
   const [popularStations, setPopularStations] = useState<RadioStation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'local' | 'popular'>('popular');
   const [location, setLocation] = useState<LocationState>({
     country: null,
     countryCode: null,
@@ -31,20 +30,6 @@ export const HomePage: React.FC = () => {
     error: null,
     permissionGranted: false,
   });
-
-  useEffect(() => {
-    requestLocation();
-  }, []);
-
-  useEffect(() => {
-    if (location.countryCode) {
-      setViewMode('local');
-      loadLocalStations(location.countryCode);
-    } else {
-      setViewMode('popular');
-      loadPopularStations();
-    }
-  }, [location.countryCode]);
 
   const requestLocation = async () => {
     setLocation(prev => ({ ...prev, isLoading: true, error: null }));
@@ -67,7 +52,7 @@ export const HomePage: React.FC = () => {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=3`
           );
           const data = await response.json();
-          
+
           const countryCode = data.address?.country_code?.toUpperCase() || null;
           const country = data.address?.country || null;
 
@@ -104,12 +89,12 @@ export const HomePage: React.FC = () => {
     );
   };
 
-  const loadLocalStations = async (countryCode: string) => {
+  const loadLocalStations = async (countryName: string) => {
     try {
-      console.log('[HomePage] Loading local stations for country:', countryCode);
+      console.log('[HomePage] Loading local stations for country:', countryName);
       setIsLoading(true);
       setError(null);
-      const response = await apiService.searchStations({ country: countryCode, limit: 12 });
+      const response = await apiService.searchStations({ country: countryName, limit: 12 });
       console.log('[HomePage] Local stations response:', response);
       setStations(response.data);
     } catch (err) {
@@ -126,7 +111,6 @@ export const HomePage: React.FC = () => {
       console.log('[HomePage] Loading popular stations');
       setIsLoading(true);
       setError(null);
-      setViewMode('popular');
       const response = await apiService.getStations(1, 8);
       console.log('[HomePage] Popular stations response:', response);
       console.log('[HomePage] response.data type:', typeof response.data, 'Array?', Array.isArray(response.data));
@@ -141,7 +125,23 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  const displayStations = viewMode === 'local' ? stations : popularStations;
+  const viewMode = location.country ? 'local' : 'popular';
+  const displayStations = location.country ? stations : popularStations;
+
+  useEffect(() => {
+    // Mount-time location lookup seeds the initial station view.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    requestLocation();
+  }, []);
+
+  useEffect(() => {
+    if (location.country) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadLocalStations(location.country);
+    } else {
+      loadPopularStations();
+    }
+  }, [location.country]);
 
   console.log('[HomePage] Current render state:', {
     isLoading,
@@ -278,7 +278,7 @@ export const HomePage: React.FC = () => {
               )}
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
-              {viewMode === 'local' && location.countryCode
+              {viewMode === 'local' && location.country
                 ? `Radio stations broadcasting in ${location.country}`
                 : 'Most popular radio stations worldwide'}
             </p>
@@ -290,9 +290,8 @@ export const HomePage: React.FC = () => {
             <span>{error}</span>
             <Button
               onClick={() => {
-                if (location.countryCode) {
-                  setViewMode('local');
-                  loadLocalStations(location.countryCode);
+                if (location.country) {
+                  loadLocalStations(location.country);
                 } else {
                   loadPopularStations();
                 }
@@ -322,11 +321,11 @@ export const HomePage: React.FC = () => {
             <RadioIcon className="w-16 h-16 mx-auto mb-4 text-slate-400" />
             <h3 className="text-xl font-semibold mb-2">No stations found</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {viewMode === 'local' && location.countryCode
+                {viewMode === 'local' && location.country
                 ? `No radio stations available for ${location.country} at the moment.`
                 : 'Unable to load stations. Please try again later.'}
             </p>
-            {viewMode === 'local' && location.countryCode && (
+              {viewMode === 'local' && location.country && (
               <Button onClick={loadPopularStations}>
                 View Popular Stations
               </Button>

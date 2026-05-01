@@ -1,23 +1,23 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ModernStationCard } from '@/modules/radio/components/ModernStationCard';
+import type { Country, RadioStation } from '@/modules/radio/types/radio.types';
+import { Button } from '@/modules/shared/components/ui';
+import { apiService } from '@/services/api.service';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Search,
-  Filter,
-  Volume2,
-  MapPin,
-  Globe,
-  X,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Radio,
-  AlertCircle,
-  Wifi,
   Clock,
+  Filter,
+  Globe,
+  MapPin,
+  Radio,
+  Search,
+  Volume2,
+  Wifi,
+  X,
 } from 'lucide-react';
-import { apiService } from '@/services/api.service';
-import type { RadioStation, Country } from '@/modules/radio/types/radio.types';
-import { Button } from '@/modules/shared/components/ui';
-import { ModernStationCard } from '@/modules/radio/components/ModernStationCard';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface FilterState {
   country?: string;
@@ -262,7 +262,7 @@ const RadioExplorerPage = () => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       setSearchTerm(query);
       setCurrentPage(1);
@@ -289,9 +289,11 @@ const RadioExplorerPage = () => {
   const toggleFavorite = (stationId: string) => {
     setFavorites((prev) => {
       const newFavorites = new Set(prev);
-      newFavorites.has(stationId)
-        ? newFavorites.delete(stationId)
-        : newFavorites.add(stationId);
+      if (newFavorites.has(stationId)) {
+        newFavorites.delete(stationId);
+      } else {
+        newFavorites.add(stationId);
+      }
       return newFavorites;
     });
   };
@@ -456,7 +458,7 @@ const RadioExplorerPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Country Filter */}
                 <div>
-                  <label 
+                  <label
                     htmlFor="country-filter"
                     className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
                   >
@@ -483,7 +485,7 @@ const RadioExplorerPage = () => {
 
                 {/* Language Filter */}
                 <div>
-                  <label 
+                  <label
                     htmlFor="language-filter"
                     className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
                   >
@@ -512,7 +514,7 @@ const RadioExplorerPage = () => {
 
                 {/* Genre/Tag Filter */}
                 <div>
-                  <label 
+                  <label
                     htmlFor="genre-filter"
                     className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
                   >
