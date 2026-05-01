@@ -1,28 +1,29 @@
 import {
   Controller,
   Get,
+  Inject,
+  Logger,
   Query,
   UsePipes,
   ValidationPipe,
-  Logger,
 } from '@nestjs/common';
-import { RadioService } from './radio.service';
-import { RadioSearchManager } from './radio-search.manager';
-import { SearchQueryDto, PaginationDto } from '../common/dto/pagination.dto';
+import { PaginationDto, SearchQueryDto } from '../common/dto/pagination.dto';
 import {
-  RadioStationDto,
-  PaginatedResponseDto,
   CountryDto,
+  PaginatedResponseDto,
+  RadioStationDto,
   TagDto,
 } from './dto/radio-station.dto';
+import { RadioSearchManager } from './radio-search.manager';
+import { RadioService } from './radio.service';
 
 /**
  * Radio Controller - handles all radio station related endpoints
  * All endpoints are read-only (no mutations in Phase 1)
- * 
+ *
  * Important: This API only serves metadata. Audio streams are
  * accessed directly by the client using the streamUrl field.
- * 
+ *
  * Now supports multi-provider search for better station coverage!
  */
 @Controller('radio')
@@ -30,7 +31,9 @@ export class RadioController {
   private readonly logger = new Logger(RadioController.name);
 
   constructor(
+    @Inject(RadioService)
     private readonly radioService: RadioService,
+    @Inject(RadioSearchManager)
     private readonly radioSearchManager: RadioSearchManager,
   ) {}
 
@@ -45,15 +48,15 @@ export class RadioController {
      status: 'ok',
      timestamp: new Date().toISOString(),
      // TODO: add provider status to health check
-     // providers: this.radioSearchManager.getProviderStatuses() 
+      // providers: this.radioSearchManager.getProviderStatuses()
    };
   }
-  
+
 
   /**
    * GET /api/v1/radio/stations
    * Get paginated list of radio stations
-   * 
+   *
    * Query params:
    * - page: Page number (default: 1)
    * - limit: Items per page (default: 20, max: 100)
@@ -70,7 +73,7 @@ export class RadioController {
   /**
    * GET /api/v1/radio/search
    * Search stations with filters
-   * 
+   *
    * Query params:
    * - query: Station name search
    * - country: Filter by country name
