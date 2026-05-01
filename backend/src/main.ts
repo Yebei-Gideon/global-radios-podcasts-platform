@@ -15,11 +15,7 @@ export async function bootstrap(_serverless = false) {
 
   // Global prefix for all routes
   const apiPrefix = process.env.API_PREFIX || 'api/v1';
-  const vercelRoutePrefix = process.env.VERCEL_ENV === 'development' ? '/_/backend' : '';
-  const normalizedPrefix = vercelRoutePrefix
-    ? `${vercelRoutePrefix.replace(/\/$/, '')}/${apiPrefix}`
-    : apiPrefix;
-  app.setGlobalPrefix(normalizedPrefix);
+  app.setGlobalPrefix(apiPrefix);
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -73,7 +69,7 @@ export async function bootstrap(_serverless = false) {
   console.log('');
   console.log('🚀 Global Radio & Podcast Platform API');
   console.log(`📡 Server running on: http://localhost:${port}`);
-  console.log(`🔗 API endpoint: http://localhost:${port}/${normalizedPrefix}`);
+  console.log(`🔗 API endpoint: http://localhost:${port}/${apiPrefix}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('');
 }
