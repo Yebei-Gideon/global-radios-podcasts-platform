@@ -11,7 +11,9 @@ export class RadioSearchManager {
   private readonly logger = new Logger(RadioSearchManager.name);
 
   constructor(
+    @Inject(RadioProviderRegistry)
     private readonly providerRegistry: RadioProviderRegistry,
+    @Inject(ConfigService)
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) { }

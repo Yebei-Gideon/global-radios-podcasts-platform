@@ -1,19 +1,22 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
 import { SearchQueryDto } from '../common/dto/pagination.dto';
 import { ProviderRegistry } from './provider.registry';
-import { ProviderPodcastResult, ProviderName } from './types/podcast-search.types';
 import { RateLimiterService } from './rate-limiter.service';
+import { ProviderName, ProviderPodcastResult } from './types/podcast-search.types';
 
 @Injectable()
 export class PodcastSearchManager {
   private readonly logger = new Logger(PodcastSearchManager.name);
 
   constructor(
+    @Inject(ProviderRegistry)
     private readonly providerRegistry: ProviderRegistry,
+    @Inject(ConfigService)
     private readonly configService: ConfigService,
+    @Inject(RateLimiterService)
     private readonly rateLimiter: RateLimiterService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}

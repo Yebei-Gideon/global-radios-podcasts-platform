@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { ProviderRadioResult, RadioProviderConfig, RadioProviderName, RadioProviderSearchParams } from '../types/radio-search.types';
 import { BaseRadioProvider } from './base-radio-provider';
-import { RadioProviderName, ProviderRadioResult, RadioProviderSearchParams, RadioProviderConfig } from '../types/radio-search.types';
 
 /**
  * Radio Browser Provider
@@ -68,6 +68,22 @@ export class RadioBrowserProvider implements BaseRadioProvider {
 
     const stations = await this.requestWithFallback<any[]>(endpoint, queryParams);
     return stations.map((s) => this.normalize(s));
+  }
+
+  async fetchCountries(): Promise<any[]> {
+    const endpoint = '/json/countries';
+    const data = await this.requestWithFallback<any[]>(endpoint);
+    return data.filter((c: any) => c.stationcount > 0);
+  }
+
+  async fetchTags(): Promise<any[]> {
+    const endpoint = '/json/tags';
+    const data = await this.requestWithFallback<any[]>(endpoint, {
+      limit: 200,
+      order: 'stationcount',
+      reverse: 'true',
+    });
+    return data.filter((t: any) => t.stationcount > 0);
   }
 
   private createAxios(baseURL: string): AxiosInstance {

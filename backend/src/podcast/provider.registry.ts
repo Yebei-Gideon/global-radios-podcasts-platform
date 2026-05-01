@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppleProvider } from './providers/apple.provider';
+import { BasePodcastProvider } from './providers/base-provider';
 import { PodcastIndexProvider } from './providers/podcast-index.provider';
 import { TaddyProvider } from './providers/taddy.provider';
-import { BasePodcastProvider } from './providers/base-provider';
 import { ProviderConfig, ProviderName, ProviderStatus } from './types/podcast-search.types';
 
 @Injectable()
@@ -13,9 +13,13 @@ export class ProviderRegistry implements OnModuleInit {
   private providerInstances: Map<ProviderName, BasePodcastProvider> = new Map();
 
   constructor(
+    @Inject(ConfigService)
     private readonly configService: ConfigService,
+    @Inject(AppleProvider)
     private readonly appleProvider: AppleProvider,
+    @Inject(PodcastIndexProvider)
     private readonly podcastIndexProvider: PodcastIndexProvider,
+    @Inject(TaddyProvider)
     private readonly taddyProvider: TaddyProvider,
   ) {}
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseRadioProvider } from './providers/base-radio-provider';
 import { RadioBrowserProvider } from './providers/radio-browser.provider';
@@ -14,10 +14,15 @@ export class RadioProviderRegistry implements OnModuleInit {
   private providerInstances: Map<RadioProviderName, BaseRadioProvider> = new Map();
 
   constructor(
+    @Inject(ConfigService)
     private readonly configService: ConfigService,
+    @Inject(RadioBrowserProvider)
     private readonly radioBrowserProvider: RadioBrowserProvider,
+    @Inject(RadioNetProvider)
     private readonly radioNetProvider: RadioNetProvider,
+    @Inject(ShoutcastProvider)
     private readonly shoutcastProvider: ShoutcastProvider,
+    @Inject(RadioplayerProvider)
     private readonly radioplayerProvider: RadioplayerProvider,
   ) { }
 

@@ -1,19 +1,19 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { Podcast } from './entities/podcast.entity';
-import { PodcastEpisode } from './entities/podcast-episode.entity';
-import { PodcastIndexService } from './podcast-index.service';
+import { PaginationDto, SearchQueryDto } from '../common/dto/pagination.dto';
 import {
+  PaginatedEpisodeDto,
+  PaginatedPodcastDto,
   PodcastDto,
   PodcastEpisodeDto,
-  PaginatedPodcastDto,
-  PaginatedEpisodeDto,
 } from './dto/podcast.dto';
-import { SearchQueryDto, PaginationDto } from '../common/dto/pagination.dto';
+import { PodcastEpisode } from './entities/podcast-episode.entity';
+import { Podcast } from './entities/podcast.entity';
+import { PodcastIndexService } from './podcast-index.service';
 
 /**
  * Main Podcast Service
@@ -28,6 +28,7 @@ export class PodcastService {
     private readonly podcastRepository: Repository<Podcast>,
     @InjectRepository(PodcastEpisode)
     private readonly episodeRepository: Repository<PodcastEpisode>,
+    @Inject(PodcastIndexService)
     private readonly podcastIndexService: PodcastIndexService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}

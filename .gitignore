@@ -32,3 +32,4 @@ Thumbs.db
 .tmp/
 .github/*.md
 backend/.env.prod
+.vercel

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { PodcastEpisode } from './podcast-episode.entity';
 
 /**
@@ -10,13 +10,13 @@ export class Podcast {
   @PrimaryColumn({ type: 'uuid' })
   id: string; // Generated UUID
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ name: 'rss_url' })
+  @Column({ name: 'rss_url', type: 'text' })
   rssUrl: string; // Primary RSS feed URL
 
   @Column({ type: 'text', nullable: true })
@@ -25,13 +25,13 @@ export class Podcast {
   @Column({ type: 'text', nullable: true })
   authorName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   language: string; // e.g., 'en', 'fr', 'sw' for Swahili
 
   @Column({ type: 'simple-array', nullable: true })
   categories: string[]; // e.g., 'news', 'music', 'comedy', 'education'
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   country: string; // Country of origin for discovery
 
   @Column({ type: 'int', default: 0 })
@@ -43,7 +43,7 @@ export class Podcast {
   @Column({ type: 'int', default: 0 })
   popularity: number; // For ranking
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   active: boolean; // Whether RSS feed is still active
 
   @CreateDateColumn({ name: 'added_at' })
@@ -52,7 +52,7 @@ export class Podcast {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   lastFetchedAt: Date; // Last time RSS was updated
 
   // Relationship to episodes

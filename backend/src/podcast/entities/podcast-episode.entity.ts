@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { Podcast } from './podcast.entity';
 
 /**
@@ -10,10 +10,10 @@ export class PodcastEpisode {
   @PrimaryColumn({ type: 'uuid' })
   id: string; // Generated UUID (unique per episode)
 
-  @Column()
+  @Column({ type: 'uuid' })
   podcastId: string; // Foreign key to Podcast
 
-  @Column()
+  @Column({ type: 'varchar' })
   title: string;
 
   @Column({ type: 'text', nullable: true })
@@ -25,13 +25,13 @@ export class PodcastEpisode {
   @Column({ type: 'int', nullable: true })
   duration: number; // Duration in seconds
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   guid: string; // RSS guid (episode unique identifier)
 
   @Column({ type: 'text', nullable: true })
   imageUrl: string; // Episode-specific artwork
 
-  @Column()
+  @Column({ type: 'timestamp' })
   publishDate: Date;
 
   @Column({ type: 'int', default: 0 })

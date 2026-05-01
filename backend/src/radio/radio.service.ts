@@ -11,7 +11,7 @@ import {
   TagDto,
 } from './dto/radio-station.dto';
 import { RadioStation } from './entities/radio-station.entity';
-import { RadioBrowserService } from './radio-browser.service';
+import { RadioBrowserProvider } from './providers/radio-browser.provider';
 import { RadioSearchManager } from './radio-search.manager';
 import { ProviderRadioResult } from './types/radio-search.types';
 
@@ -29,10 +29,16 @@ export class RadioService {
   constructor(
     @InjectRepository(RadioStation)
     private readonly radioRepository: Repository<RadioStation>,
-    private readonly radioBrowserService: RadioBrowserService,
+
+    @Inject(RadioBrowserProvider)
+    private readonly radioBrowserProvider: RadioBrowserProvider,
+
+    @Inject(RadioSearchManager)
     private readonly radioSearchManager: RadioSearchManager,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) { }
+
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
+  ) {}
 
   /**
    * Get paginated list of radio stations using multi-provider search
@@ -112,7 +118,7 @@ export class RadioService {
       return cached;
     }
 
-    const countries = await this.radioBrowserService.fetchCountries();
+    const countries = await this.radioBrowserProvider.fetchCountries();
     const result = countries
       .map((c) => ({
         name: c.name,
@@ -138,7 +144,7 @@ export class RadioService {
       return cached;
     }
 
-    const tags = await this.radioBrowserService.fetchTags();
+    const tags = await this.radioBrowserProvider.fetchTags();
     const result = tags.map((t) => ({
       name: t.name,
       stationCount: t.stationcount,
@@ -148,20 +154,6 @@ export class RadioService {
     return result;
   }
 
-  /**
-   * Save or update stations in database
-   * Uses upsert to avoid duplicates
-   */
-  private async saveStations(rawStations: any[]): Promise<RadioStation[]> {
-    const stations = rawStations.map((raw) => this.normalizeStation(raw));
-
-    // Batch upsert - more efficient for multiple records
-    if (stations.length > 0) {
-      await this.radioRepository.save(stations);
-    }
-
-    return stations;
-  }
 
   /**
    * Normalize Radio Browser API response to our entity format
