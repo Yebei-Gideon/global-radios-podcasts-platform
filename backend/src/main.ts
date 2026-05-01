@@ -32,7 +32,7 @@ export async function bootstrap(serverless = false) {
   const rawCors = process.env.CORS_ORIGIN;
   const parseOrigins = (raw?: string) => {
     // Default to the single production origin if nothing provided
-    if (!raw) return ['https://global-radio-podcast.vercel.app'];
+    if (!raw) return ['https://global-radio-podcast.vercel.app','https://global-radios-podcasts-platform.vercel.app'];
 
     const escape = (str: string) => str.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
