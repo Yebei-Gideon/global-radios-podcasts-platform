@@ -34,6 +34,22 @@ export class RadioController {
     private readonly radioSearchManager: RadioSearchManager,
   ) {}
 
+/**
+ * GET /api/v1/radio/health
+ * Health check endpoint
+ */
+ @Get('health')
+ healthCheck() {
+   this.logger.log('GET /radio/health - Service is healthy');
+    return {
+     status: 'ok',
+     timestamp: new Date().toISOString(),
+     // TODO: add provider status to health check
+     // providers: this.radioSearchManager.getProviderStatuses() 
+   };
+  }
+  
+
   /**
    * GET /api/v1/radio/stations
    * Get paginated list of radio stations
