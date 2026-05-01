@@ -14,3 +14,6 @@ Useful commands
 - `bun run dev:backend` — start the backend development server
 - `bun run dev:frontend` — start the frontend dev server
 - `bun run dev` — run both dev servers
+
+
+![Cron job status](https://api.cron-job.org/jobs/7547952/3ded68b28782404f/status-7.svg)
