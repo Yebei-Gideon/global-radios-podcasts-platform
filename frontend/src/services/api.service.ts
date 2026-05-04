@@ -21,8 +21,14 @@ class ApiService {
 
   constructor() {
     // Use the full API URL from VITE_API_URL (include any path/prefix like /api/v1).
-    // Falls back to the current origin with /api/v1 only if env var is not present.
-    const apiURL = import.meta.env.VITE_API_URL || `${window.location.origin}/api/v1`;
+    // Fall back to same-origin /api/v1 when unset or clearly invalid for production.
+    const envURL = import.meta.env.VITE_API_URL as string | undefined;
+    const isBadProdURL = import.meta.env.PROD && !!envURL && (
+      envURL.includes('localhost') ||
+      envURL.includes('127.0.0.1') ||
+      envURL.includes('/_/')
+    );
+    const apiURL = !envURL || isBadProdURL ? `${window.location.origin}/api/v1` : envURL;
     this.baseURL = apiURL;
 
     // Log the API URL being used (helpful for debugging)
