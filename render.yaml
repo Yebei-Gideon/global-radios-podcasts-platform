@@ -6,6 +6,7 @@ services:
     repo: https://github.com/Yebei-Gideon/global-radios-podcasts-platform
     rootDir: backend
     plan: free
+    preDeployCommand: bun run migrate:run
     envVars:
       # Application Configuration
       - key: NODE_ENV
@@ -14,8 +15,6 @@ services:
         value: 3000
       - key: API_PREFIX
         value: api/v1
-      - key: REDIS_PASSWORD
-        value: "not_required_on_render"
 
       # External Neon Database Connection
       - key: DATABASE_URL
@@ -32,13 +31,10 @@ services:
           type: redis
           name: radio-cache
           property: port
-      # - key: REDIS_PASSWORD
-      #   fromService:
-      #     type: redis
-      #     name: radio-cache
-      #     property: password
       - key: REDIS_TTL
         value: 3600
+      - key: REDIS_PASSWORD
+        value: "not_required_on_render_internal"
 
       # Third-Party API Configuration
       - key: RADIO_BROWSER_API_URL

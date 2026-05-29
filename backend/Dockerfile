@@ -1,31 +1,40 @@
-# Multi-stage Dockerfile using Bun
-# Builder stage: install deps and build TypeScript
+# --- Stage 1: Build Stage ---
 FROM oven/bun:1.3.8 AS builder
 
 WORKDIR /app
 
-# Copy package files first to leverage layer caching
+# Copy lockfiles and manifest configurations
 COPY package.json tsconfig.json ./
-# copy possible bun lock if present (will be ignored if absent)
-COPY bun.lockb ./
+COPY bun.lock ./
 
-# Copy source
-COPY src ./src
+# Install ALL dependencies (including @nestjs/cli in devDependencies)
+RUN bun install --no-check
 
-# Install dependencies and build
-RUN bun install --no-check && bun run build
+# Copy all source files and migration scripts
+COPY . .
 
-# Runtime stage
+# Run your exact Nest build script
+RUN bun run build
+
+# --- Stage 2: Clean Production Dependency Stage ---
+# This step safely drops development packages to keep the image lean
+FROM oven/bun:1.3.8 AS production-deps
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun install --production --no-check
+
+# --- Stage 3: Runtime Stage ---
 FROM oven/bun:1.3.8 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy built files and installed deps from builder
+# Bring over production code and slim node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/run-migrations.ts* /app/data-source.ts* ./
+COPY --from=production-deps /app/node_modules ./node_modules
 COPY package.json ./
 
 EXPOSE 3000
 
-# Default command: run dev server when DOCKER_ENV or NODE_ENV=development, else run production start
-CMD ["sh", "-lc", "if [ \"$DOCKER_ENV\" = \"true\" ] || [ \"$NODE_ENV\" = \"development\" ]; then bun run start:dev; else bun run start; fi"]
+# Triggers 'bun dist/main.js' directly as designated by your start script
+CMD ["bun", "run", "start"]
