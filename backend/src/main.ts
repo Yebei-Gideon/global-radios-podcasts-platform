@@ -15,7 +15,12 @@ export async function bootstrap(_serverless = false) {
 
   // Global prefix for all routes
   const apiPrefix = process.env.API_PREFIX || 'api/v1';
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: [
+    // Exclude health check endpoint from global prefix
+    'health',
+    ],
+  });
 
   // Global validation pipe
   app.useGlobalPipes(

@@ -9,6 +9,7 @@ import radioConfig from './config/radio.config';
 import redisConfig from './config/redis.config';
 import { PodcastModule } from './podcast/podcast.module';
 import { RadioModule } from './radio/radio.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -82,5 +83,7 @@ import { RadioModule } from './radio/radio.module';
     PodcastModule,
     // TODO Phase 2: Add UserModule (auth, favorites)
   ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule { }
