@@ -1,0 +1,57 @@
+services:
+  # --- Backend Web Service ---
+  - type: web
+    name: radio-podcast-backend
+    runtime: docker
+    repo: https://github.com/Yebei-Gideon/global-radios-podcasts-platform
+    rootDir: backend
+    plan: free
+    envVars:
+      # Application Configuration
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: API_PREFIX
+        value: api/v1
+
+      # External Neon Database Connection
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_YMZtlGWp0iq2@ep-curly-mode-aqq5brwj-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+      # Internal Redis Mapping
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: radio-cache
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: radio-cache
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          type: redis
+          name: radio-cache
+          property: password
+      - key: REDIS_TTL
+        value: 3600
+
+      # Third-Party API Configuration
+      - key: RADIO_BROWSER_API_URL
+        value: https://de1.api.radio-browser.info
+
+      # Security & Rate Limiting
+      - key: CORS_ORIGIN
+        value: https://global-radio-podcast.vercel.app
+      - key: RATE_LIMIT_TTL
+        value: 60
+      - key: RATE_LIMIT_MAX
+        value: 100
+
+  # --- Managed Redis Instance ---
+  - type: redis
+    name: radio-cache
+    plan: free
+    ipAllowList: []
