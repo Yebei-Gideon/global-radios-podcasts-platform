@@ -41,8 +41,8 @@ services:
         value: https://de1.api.radio-browser.info
 
       # Security & Rate Limiting
-      - key: CORS_ORIGIN
-        value: https://global-radios-podcasts-platform.vercel.app
+      # - key: CORS_ORIGIN
+      #   value: https://global-radios-podcasts-platform.vercel.app
 
       - key: RATE_LIMIT_TTL
         value: 60
