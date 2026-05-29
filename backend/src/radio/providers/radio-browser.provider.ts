@@ -50,9 +50,23 @@ export class RadioBrowserProvider implements BaseRadioProvider {
   }
 
   async search(params: RadioProviderSearchParams): Promise<ProviderRadioResult[]> {
+    const limit = params.limit || 20;
+    const offset = params.offset || 0;
+
+    // For the default discovery view, use the topvote route because it is
+    // more reliable than the generic search endpoint and still returns a broad
+    // set of stations when no filters are applied.
+    if (!params.name && !params.country && !params.language && !params.tag && offset === 0) {
+      const endpoint = `/json/stations/topvote/${limit}`;
+      this.logger.debug(`Radio Browser top stations: ${endpoint}`);
+
+      const stations = await this.requestWithFallback<any[]>(endpoint);
+      return stations.map((s) => this.normalize(s));
+    }
+
     const queryParams: any = {
-      limit: params.limit || 20,
-      offset: params.offset || 0,
+      limit,
+      offset,
       order: 'votes',
       reverse: 'true',
     };

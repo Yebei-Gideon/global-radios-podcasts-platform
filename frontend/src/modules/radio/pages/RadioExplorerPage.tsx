@@ -58,6 +58,7 @@ const RadioExplorerPage = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+  const MAX_BACKGROUND_PAGES = 25;
 
   // Retry logic constants
   const MAX_RETRIES = 3;
@@ -218,7 +219,7 @@ const RadioExplorerPage = () => {
                 const totalPagesMeta = stationsData.meta?.totalPages ?? page;
                 continueLoading = currentPageMeta < totalPagesMeta;
                 page++;
-                if (page > 10) break;
+                if (page > MAX_BACKGROUND_PAGES) break;
               } else {
                 continueLoading = false;
               }

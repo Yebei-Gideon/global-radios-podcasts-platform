@@ -11,7 +11,7 @@ import { Button, Input, Card } from '@/modules/shared/components/ui';
  * Podcasts Discovery Page (Multi-Provider)
  * Search and discover podcasts from Apple iTunes, Podcast Index, and Taddy
  * Browse and play podcasts with full episode list and player
- * 
+ *
  * Features:
  * - Debounced search with accessibility
  * - Multi-provider filtering with status indicators
@@ -51,32 +51,20 @@ export const PodcastsPage: React.FC = () => {
         console.warn('Failed to parse recent searches:', err);
       }
     }
-    
+
     // Initialize on mount
     (async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        const data = await retryWithBackoff(async () =>
-          apiService.searchPodcasts({
-            query: 'trending',
-            providers: selectedProviders,
-            limit: itemsPerPage,
-          })
-        );
+
+        const data = await loadTrendingPodcasts(itemsPerPage);
 
         if (data && data.length > 0) {
           setPodcasts(data);
           setHasMore(data.length >= itemsPerPage);
         } else {
-          const fallbackData = await retryWithBackoff(async () =>
-            apiService.searchPodcasts({
-              query: 'popular',
-              providers: selectedProviders,
-              limit: itemsPerPage,
-            })
-          );
+          const fallbackData = await loadTrendingPodcasts(itemsPerPage);
           setPodcasts(fallbackData || []);
           setHasMore((fallbackData?.length || 0) >= itemsPerPage);
         }
@@ -87,7 +75,7 @@ export const PodcastsPage: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
-      
+
       // Load provider stats
       try {
         const stats = await retryWithBackoff(async () => apiService.getPodcastProviderStatus());
@@ -132,29 +120,37 @@ export const PodcastsPage: React.FC = () => {
     }
   }, [MAX_RETRIES, RETRY_DELAY]);
 
+  const loadTrendingPodcasts = useCallback(
+    (limit: number) => retryWithBackoff(() => apiService.getPopularPodcasts(limit)),
+    [retryWithBackoff],
+  );
+
   const handleSearch = async (resetPage = true) => {
-    const query = searchQuery.trim() || 'trending';
-    
+    const query = searchQuery.trim();
+
     try {
       setIsLoading(resetPage);
       setError(null);
       if (resetPage) setCurrentPage(1);
-      
+
       // Save to recent searches if user initiated the search
       if (searchQuery.trim()) {
         saveToRecentSearches(query);
       }
 
-      console.log('[PodcastsPage] Searching for:', query);
-      const data = await retryWithBackoff(async () =>
-        apiService.searchPodcasts({
-          query,
-          providers: selectedProviders,
-          language: selectedLanguage || undefined,
-          limit: itemsPerPage,
-        })
-      );
-      
+      const data = query || selectedLanguage
+        ? await retryWithBackoff(async () =>
+            apiService.searchPodcasts({
+              query: query || 'podcast',
+              providers: selectedProviders,
+              language: selectedLanguage || undefined,
+              limit: itemsPerPage,
+            })
+          )
+        : await loadTrendingPodcasts(itemsPerPage);
+
+      console.log('[PodcastsPage] Loaded podcasts for:', query || 'trending');
+
       if (resetPage) {
         setPodcasts(data || []);
       } else {
@@ -213,7 +209,7 @@ export const PodcastsPage: React.FC = () => {
       case 'popularity':
         return sorted.sort((a: Podcast, b: Podcast) => (b.popularity || 0) - (a.popularity || 0));
       case 'recent':
-        return sorted.sort((a: Podcast, b: Podcast) => 
+        return sorted.sort((a: Podcast, b: Podcast) =>
           new Date(b.lastUpdated || 0).getTime() - new Date(a.lastUpdated || 0).getTime()
         );
       case 'relevance':
@@ -228,28 +224,30 @@ export const PodcastsPage: React.FC = () => {
 
   const loadMore = async () => {
     if (isLoadingMore || !hasMore) return;
-    
+
     setIsLoadingMore(true);
     setCurrentPage(prev => prev + 1);
-    
+
     try {
       const newLimit = (currentPage + 1) * itemsPerPage;
-      const query = searchQuery.trim() || 'trending';
-      
-      const data = await retryWithBackoff(async () =>
-        apiService.searchPodcasts({
-          query,
-          providers: selectedProviders,
-          language: selectedLanguage || undefined,
-          limit: newLimit,
-        })
-      );
-      
+      const query = searchQuery.trim();
+
+      const data = query || selectedLanguage
+        ? await retryWithBackoff(async () =>
+            apiService.searchPodcasts({
+              query: query || 'podcast',
+              providers: selectedProviders,
+              language: selectedLanguage || undefined,
+              limit: newLimit,
+            })
+          )
+        : await loadTrendingPodcasts(newLimit);
+
       const existingIds = new Set(podcasts.map(p => p.id || p.title));
       const newPodcasts = (data || [])
         .slice(podcasts.length)
         .filter((p: Podcast) => !existingIds.has(p.id || p.title));
-      
+
       if (newPodcasts.length > 0) {
         setPodcasts([...podcasts, ...newPodcasts]);
       }
@@ -335,7 +333,7 @@ export const PodcastsPage: React.FC = () => {
                     </button>
                   )}
                 </div>
-                
+
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value)}
@@ -444,7 +442,7 @@ export const PodcastsPage: React.FC = () => {
                   <span className="text-sm">Connection issues detected. Retrying automatically...</span>
                 </div>
               )}
-              
+
               {Object.keys(providerStats).length > 0 && (
                 <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
                   <p className="text-sm font-semibold text-white/90 mb-2 flex items-center gap-2">
