@@ -17,7 +17,7 @@ import {
   Wifi,
   X,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface FilterState {
   country?: string;
@@ -49,6 +49,7 @@ const RadioExplorerPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filter states
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterState>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -67,7 +68,6 @@ const RadioExplorerPage = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [countries, setCountries] = useState<Country[]>([]);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Calculate filter statistics
   const filterStats = useMemo(() => {
@@ -256,20 +256,16 @@ const RadioExplorerPage = () => {
     setActiveFilters(active);
   }, [filters]);
 
-  // Handle search with debouncing
-  const handleSearch = useCallback((query: string) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+  // Submit search explicitly so typing does not trigger filtering immediately
+  const handleSearchSubmit = useCallback((query: string) => {
+    const nextQuery = query.trim();
+    setSearchTerm(nextQuery);
+    setCurrentPage(1);
 
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchTerm(query);
-      setCurrentPage(1);
-      if (query.trim()) {
-        saveToRecentSearches(query);
-      }
-    }, 300); // 300ms debounce
-  }, []);
+    if (nextQuery) {
+      saveToRecentSearches(nextQuery);
+    }
+  }, [saveToRecentSearches]);
 
   // Clear filters
   const clearFilters = () => {
@@ -280,6 +276,7 @@ const RadioExplorerPage = () => {
 
   // Clear search
   const clearSearch = () => {
+    setSearchInput('');
     setSearchTerm('');
     setCurrentPage(1);
   };
@@ -347,32 +344,43 @@ const RadioExplorerPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="relative mb-4">
+          <form
+            className="relative mb-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearchSubmit(searchInput);
+            }}
+          >
             <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search by name, country, language..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  saveToRecentSearches(searchTerm);
-                }
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               aria-label="Search radio stations"
               aria-describedby="search-help"
-              className="w-full pl-12 pr-12 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full pl-12 pr-32 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            {searchTerm && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              )}
               <button
-                onClick={clearSearch}
-                aria-label="Clear search"
-                className="absolute right-4 top-3.5 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                type="submit"
+                aria-label="Search radio stations"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                Search
               </button>
-            )}
-          </div>
+            </div>
+          </form>
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && !searchTerm && (
@@ -391,6 +399,7 @@ const RadioExplorerPage = () => {
                   <button
                     key={search}
                     onClick={() => {
+                      setSearchInput(search);
                       setSearchTerm(search);
                       setCurrentPage(1);
                     }}
@@ -459,7 +468,7 @@ const RadioExplorerPage = () => {
                 <div>
                   <label
                     htmlFor="country-filter"
-                    className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+                    className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 mb-3"
                   >
                     <MapPin className="w-4 h-4" />
                     Country
@@ -486,7 +495,7 @@ const RadioExplorerPage = () => {
                 <div>
                   <label
                     htmlFor="language-filter"
-                    className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+                    className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 mb-3"
                   >
                     <Globe className="w-4 h-4" />
                     Language
@@ -515,7 +524,7 @@ const RadioExplorerPage = () => {
                 <div>
                   <label
                     htmlFor="genre-filter"
-                    className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+                    className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 mb-3"
                   >
                     <Volume2 className="w-4 h-4" />
                     Genre
