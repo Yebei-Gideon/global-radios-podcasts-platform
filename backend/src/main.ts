@@ -17,8 +17,8 @@ export async function bootstrap(_serverless = false) {
   const apiPrefix = process.env.API_PREFIX || 'api/v1';
   app.setGlobalPrefix(apiPrefix, {
     exclude: [
-    // Exclude health check endpoint from global prefix
-    'health',
+      // Exclude health check endpoint from global prefix
+      'health',
     ],
   });
 
@@ -36,9 +36,16 @@ export async function bootstrap(_serverless = false) {
 
   // Configure CORS using CORS_ORIGIN env var (supports comma-separated values and '*' wildcards)
   const rawCors = process.env.CORS_ORIGIN;
+
   const parseOrigins = (raw?: string) => {
-    // Default to the single production origin if nothing provided
-    if (!raw) return ['https://global-radio-podcast.vercel.app','https://global-radios-podcasts-platform-one.vercel.app','https://global-radios-podcasts-platform.vercel.app'];
+    // Default to strict production origins matching your exact domains
+    if (!raw) {
+      return [
+        'https://global-radio-podcast.vercel.app',
+        'https://global-radios-podcasts-platform-one.vercel.app',
+        'https://global-radios-podcasts-platform.vercel.app'
+      ];
+    }
 
     const escape = (str: string) => str.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
@@ -48,7 +55,6 @@ export async function bootstrap(_serverless = false) {
       .filter(Boolean)
       .map(s => {
         if (s.includes('*')) {
-          // Convert shell-like '*' to '.*' in a safe way
           const pattern = s.split('*').map(escape).join('.*');
           return new RegExp(`^${pattern}$`);
         }
@@ -58,11 +64,14 @@ export async function bootstrap(_serverless = false) {
 
   const corsOrigins = parseOrigins(rawCors);
 
+  // Robust, standard-compliant CORS configuration
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   const originLog = corsOrigins.map(o => (o instanceof RegExp ? o.toString() : o)).join(', ');
