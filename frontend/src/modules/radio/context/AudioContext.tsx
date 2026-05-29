@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import type { RadioStation } from '../types/radio.types';
 import { useGlobalAudioManager } from '@/modules/shared/context/GlobalAudioManager';
+import { useAudioEqualizer, type EqualizerController } from '@/modules/shared/lib/audio-equalizer';
 
 interface AudioContextType {
   currentStation: RadioStation | null;
@@ -9,6 +10,7 @@ interface AudioContextType {
   isMuted: boolean;
   isLoading: boolean;
   error: string | null;
+  equalizer: EqualizerController;
   playStation: (station: RadioStation) => void;
   pause: () => void;
   togglePlay: () => void;
@@ -27,13 +29,13 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const globalAudioManager = useGlobalAudioManager();
   const [currentStation, setCurrentStation] = useState<RadioStation | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const eventListenersRef = useRef<Array<{ event: string; handler: EventListener }>>([]);
+  const equalizer = useAudioEqualizer(audioElement, 'radio');
 
   // Build an ordered list of candidate stream URLs, preferring HTTPS when available
   const buildStreamCandidates = (station: RadioStation): string[] => {
@@ -86,8 +88,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Create audio element only once
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.volume = volume;
       audioRef.current.crossOrigin = 'anonymous';
+      setAudioElement(audioRef.current);
 
       const handlers = {
         loadstart: () => {
@@ -113,7 +115,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         error: (e: Event) => {
           const audio = e.target as HTMLAudioElement;
           let errorMessage = 'Failed to load stream';
-          
+
           if (audio.error) {
             switch (audio.error.code) {
               case audio.error.MEDIA_ERR_ABORTED:
@@ -130,7 +132,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 break;
             }
           }
-          
+
           console.error('Audio playback error:', errorMessage, audio.error);
           setError(errorMessage);
           setIsLoading(false);
@@ -152,10 +154,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           audioRef.current?.removeEventListener(event, handler);
         });
         eventListenersRef.current = [];
-        
+
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current.load();
+        setAudioElement(null);
       }
     };
   }, []);
@@ -185,6 +188,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentStation(station);
     setError(null);
     setIsLoading(true);
+
+    void equalizer.resumeContext();
 
     let lastError: string | null = null;
 
@@ -227,6 +232,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isPlaying) {
       pause();
     } else {
+      void equalizer.resumeContext();
       audioRef.current.play()
         .then(() => setIsPlaying(true))
         .catch((error) => console.error('Play error:', error));
@@ -234,26 +240,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setVolume = (newVolume: number) => {
-    const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    setVolumeState(clampedVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = clampedVolume;
-    }
-    if (clampedVolume > 0) {
-      setIsMuted(false);
-    }
+    equalizer.setVolume(newVolume);
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) {
-        audioRef.current.volume = volume;
-        setIsMuted(false);
-      } else {
-        audioRef.current.volume = 0;
-        setIsMuted(true);
-      }
-    }
+    equalizer.toggleMute();
   };
 
   return (
@@ -261,10 +252,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         currentStation,
         isPlaying,
-        volume,
-        isMuted,
+        volume: equalizer.volume,
+        isMuted: equalizer.isMuted,
         isLoading,
         error,
+        equalizer,
         playStation,
         pause,
         togglePlay,

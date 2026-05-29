@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import type { Podcast, PodcastEpisode } from '../types/podcast.types';
 import { useGlobalAudioManager } from '@/modules/shared/context/GlobalAudioManager';
+import { useAudioEqualizer, type EqualizerController } from '@/modules/shared/lib/audio-equalizer';
 
 interface PodcastPlayerContextType {
   // Current State
@@ -9,19 +10,20 @@ interface PodcastPlayerContextType {
   isPlaying: boolean;
   isLoading: boolean;
   error: string | null;
-  
+
   // Playback Control
   duration: number;
   currentTime: number;
   volume: number;
   isMuted: boolean;
   playbackRate: number;
-  
+  equalizer: EqualizerController;
+
   // Queue Management
   queue: PodcastEpisode[];
   queueIndex: number;
   isLooping: boolean;
-  
+
   // Methods
   playPodcast: (podcast: Podcast, episode: PodcastEpisode) => void;
   playEpisode: (episode: PodcastEpisode) => void;
@@ -61,9 +63,9 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentTime, setCurrentTime] = useState(0);
 
   // Volume & Playback
-  const [volume, setVolumeState] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRateState] = useState(1);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const equalizer = useAudioEqualizer(audioElement, 'podcast');
 
   // Queue State
   const [queue, setQueueState] = useState<PodcastEpisode[]>([]);
@@ -91,8 +93,9 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.volume = volume;
+      audioRef.current.crossOrigin = 'anonymous';
       audioRef.current.playbackRate = playbackRate;
+      setAudioElement(audioRef.current);
 
       const updateTime = () => setCurrentTime(audioRef.current?.currentTime || 0);
       const updateDuration = () => setDuration(audioRef.current?.duration || 0);
@@ -111,7 +114,7 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       const handleError = (e: Event) => {
         const audio = e.target as HTMLAudioElement;
         let errorMessage = 'Failed to load episode';
-        
+
         if (audio.error) {
           switch (audio.error.code) {
             case audio.error.MEDIA_ERR_NETWORK:
@@ -146,6 +149,7 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
+        setAudioElement(null);
       }
     };
   }, []);
@@ -168,6 +172,8 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(true);
     audioRef.current.src = episode.audioUrl;
 
+    void equalizer.resumeContext();
+
     const playPromise = audioRef.current.play();
     if (playPromise !== undefined) {
       playPromise
@@ -185,6 +191,7 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resume = () => {
     if (audioRef.current && currentEpisode) {
+      void equalizer.resumeContext();
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
@@ -210,26 +217,11 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const setVolume = (newVolume: number) => {
-    const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    setVolumeState(clampedVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = clampedVolume;
-    }
-    if (clampedVolume > 0) {
-      setIsMuted(false);
-    }
+    equalizer.setVolume(newVolume);
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) {
-        audioRef.current.volume = volume;
-        setIsMuted(false);
-      } else {
-        audioRef.current.volume = 0;
-        setIsMuted(true);
-      }
-    }
+    equalizer.toggleMute();
   };
 
   const setPlaybackRate = (rate: number) => {
@@ -304,9 +296,10 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
         error,
         duration,
         currentTime,
-        volume,
-        isMuted,
+        volume: equalizer.volume,
+        isMuted: equalizer.isMuted,
         playbackRate,
+        equalizer,
         queue,
         queueIndex,
         isLooping,

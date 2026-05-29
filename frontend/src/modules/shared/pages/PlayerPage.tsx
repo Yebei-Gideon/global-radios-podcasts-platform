@@ -23,6 +23,7 @@ import {
 import { useAudio } from '@/modules/radio/context/AudioContext';
 import { usePodcastPlayer } from '@/modules/podcast/context/PodcastPlayerContext';
 import { Button } from '@/modules/shared/components/ui';
+import { EqualizerPanel } from '@/modules/shared/components/EqualizerPanel';
 
 interface PlayerPageProps {
   onClose?: () => void;
@@ -34,7 +35,7 @@ interface PlayerPageProps {
  * Future-proof for live TV and other media types
  */
 export const PlayerPage: React.FC<PlayerPageProps> = ({ onClose }) => {
-  const { currentStation, isPlaying, volume, isMuted, togglePlay, setVolume, toggleMute } =
+  const { currentStation, isPlaying, volume, isMuted, togglePlay, setVolume, toggleMute, equalizer: radioEqualizer } =
     useAudio();
   const {
     currentPodcast,
@@ -47,6 +48,7 @@ export const PlayerPage: React.FC<PlayerPageProps> = ({ onClose }) => {
     togglePlayPause: podcastTogglePlay,
     setVolume: setPodcastVolume,
     toggleMute: podcastToggleMute,
+    equalizer: podcastEqualizer,
     seek,
     nextEpisode,
     previousEpisode,
@@ -76,6 +78,7 @@ export const PlayerPage: React.FC<PlayerPageProps> = ({ onClose }) => {
   const activeVolume = isRadioActive ? volume : podcastVolume;
   const activeIsMuted = isRadioActive ? isMuted : podcastMuted;
   const activeIsPlaying = isRadioActive ? isPlaying : podcastPlaying;
+  const activeEqualizer = isRadioActive ? radioEqualizer : podcastEqualizer;
 
   const handleTogglePlay = () => {
     if (isRadioActive) {
@@ -527,6 +530,17 @@ export const PlayerPage: React.FC<PlayerPageProps> = ({ onClose }) => {
             {Math.round(activeVolume * 100)}%
           </span>
         </motion.div>
+
+        {activeType && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.56 }}
+            className="mb-8"
+          >
+            <EqualizerPanel equalizer={activeEqualizer} />
+          </motion.div>
+        )}
 
         {/* Playback Speed - Podcast Only */}
         {isPodcastActive && (
