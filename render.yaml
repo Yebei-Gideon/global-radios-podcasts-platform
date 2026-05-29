@@ -42,7 +42,8 @@ services:
 
       # Security & Rate Limiting
       - key: CORS_ORIGIN
-        value: https://global-radio-podcast.vercel.app
+        value: https://global-radios-podcasts-platform.vercel.app
+
       - key: RATE_LIMIT_TTL
         value: 60
       - key: RATE_LIMIT_MAX
