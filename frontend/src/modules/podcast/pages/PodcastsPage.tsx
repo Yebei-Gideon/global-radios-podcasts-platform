@@ -41,50 +41,33 @@ export const PodcastsPage: React.FC = () => {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000;
 
-  useEffect(() => {
-    // Load recent searches from localStorage
-    const saved = localStorage.getItem('podcastRecentSearches');
-    if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved).slice(0, 5));
-      } catch (err) {
-        console.warn('Failed to parse recent searches:', err);
+  // Retry logic with exponential backoff
+  const retryWithBackoff = useCallback(async (fn: () => Promise<any>, attempt: number = 0): Promise<any> => {
+    try {
+      return await fn();
+    } catch (err: any) {
+      if (attempt < MAX_RETRIES && (err.response?.status >= 500 || !navigator.onLine)) {
+        setIsNetworkError(!navigator.onLine);
+        const delay = RETRY_DELAY * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return retryWithBackoff(fn, attempt + 1);
       }
+      throw err;
     }
+  }, [MAX_RETRIES, RETRY_DELAY]);
 
-    // Initialize on mount
-    (async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const data = await loadTrendingPodcasts(itemsPerPage);
-
-        if (data && data.length > 0) {
-          setPodcasts(data);
-          setHasMore(data.length >= itemsPerPage);
-        } else {
-          const fallbackData = await loadTrendingPodcasts(itemsPerPage);
-          setPodcasts(fallbackData || []);
-          setHasMore((fallbackData?.length || 0) >= itemsPerPage);
-        }
-      } catch (err) {
-        console.error('Failed to load podcasts:', err);
-        setError('Failed to load podcasts. Please try again.');
-        setPodcasts([]);
-      } finally {
-        setIsLoading(false);
-      }
-
-      // Load provider stats
-      try {
-        const stats = await retryWithBackoff(async () => apiService.getPodcastProviderStatus());
-        setProviderStats(stats);
-      } catch (err) {
-        console.warn('Failed to load provider stats:', err);
-      }
-    })();
-  }, []);
+  const loadCatalogPodcasts = useCallback(
+    (limit: number) =>
+      retryWithBackoff(() =>
+        apiService.searchPodcasts({
+          query: 'podcast',
+          providers: selectedProviders,
+          language: selectedLanguage || undefined,
+          limit,
+        }),
+      ),
+    [retryWithBackoff, selectedLanguage, selectedProviders],
+  );
 
   // Debounced search with memoization
   const debouncedSearch = useCallback((_query: string, debounceMs: number = 500) => {
@@ -105,25 +88,43 @@ export const PodcastsPage: React.FC = () => {
     localStorage.setItem('podcastRecentSearches', JSON.stringify(updated));
   }, [recentSearches]);
 
-  // Retry logic with exponential backoff
-  const retryWithBackoff = useCallback(async (fn: () => Promise<any>, attempt: number = 0): Promise<any> => {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (attempt < MAX_RETRIES && (err.response?.status >= 500 || !navigator.onLine)) {
-        setIsNetworkError(!navigator.onLine);
-        const delay = RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return retryWithBackoff(fn, attempt + 1);
+  useEffect(() => {
+    // Load recent searches from localStorage
+    const saved = localStorage.getItem('podcastRecentSearches');
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved).slice(0, 5));
+      } catch (err) {
+        console.warn('Failed to parse recent searches:', err);
       }
-      throw err;
     }
-  }, [MAX_RETRIES, RETRY_DELAY]);
 
-  const loadTrendingPodcasts = useCallback(
-    (limit: number) => retryWithBackoff(() => apiService.getPopularPodcasts(limit)),
-    [retryWithBackoff],
-  );
+    // Initialize on mount
+    (async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const data = await loadCatalogPodcasts(itemsPerPage);
+
+        setPodcasts(data || []);
+        setHasMore((data?.length || 0) >= itemsPerPage);
+      } catch (err) {
+        console.error('Failed to load podcasts:', err);
+        setError('Failed to load podcasts. Please try again.');
+        setPodcasts([]);
+      } finally {
+        setIsLoading(false);
+      }
+
+      try {
+        const stats = await retryWithBackoff(async () => apiService.getPodcastProviderStatus());
+        setProviderStats(stats);
+      } catch (err) {
+        console.warn('Failed to load provider stats:', err);
+      }
+    })();
+  }, [loadCatalogPodcasts, retryWithBackoff]);
 
   const handleSearch = async (resetPage = true) => {
     const query = searchQuery.trim();
@@ -133,8 +134,7 @@ export const PodcastsPage: React.FC = () => {
       setError(null);
       if (resetPage) setCurrentPage(1);
 
-      // Save to recent searches if user initiated the search
-      if (searchQuery.trim()) {
+      if (query) {
         saveToRecentSearches(query);
       }
 
@@ -147,9 +147,9 @@ export const PodcastsPage: React.FC = () => {
               limit: itemsPerPage,
             })
           )
-        : await loadTrendingPodcasts(itemsPerPage);
+        : await loadCatalogPodcasts(itemsPerPage);
 
-      console.log('[PodcastsPage] Loaded podcasts for:', query || 'trending');
+      console.log('[PodcastsPage] Loaded podcasts for:', query || 'catalog');
 
       if (resetPage) {
         setPodcasts(data || []);
@@ -241,7 +241,7 @@ export const PodcastsPage: React.FC = () => {
               limit: newLimit,
             })
           )
-        : await loadTrendingPodcasts(newLimit);
+        : await loadCatalogPodcasts(newLimit);
 
       const existingIds = new Set(podcasts.map(p => p.id || p.title));
       const newPodcasts = (data || [])
@@ -508,7 +508,7 @@ export const PodcastsPage: React.FC = () => {
                 <p className="text-slate-600 dark:text-slate-400">
                   {searchQuery
                     ? `${podcasts.length} results found for "${searchQuery}"`
-                    : `Popular and trending podcasts (${podcasts.length})`}
+                    : `All podcasts (${podcasts.length})`}
                   {selectedLanguage && ` in ${selectedLanguage.toUpperCase()}`}
                 </p>
               </div>

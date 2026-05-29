@@ -22,10 +22,9 @@ export class PodcastSearchManager {
   ) {}
 
   async search(searchDto: SearchQueryDto): Promise<ProviderPodcastResult[]> {
-    const query = searchDto.query?.trim();
+    const query = searchDto.query?.trim() || 'podcast';
     const language = searchDto.language;
     const limit = this.getBoundedLimit(searchDto.limit);
-    if (!query) return [];
 
     const requestedProviders = Array.isArray(searchDto.providers)
       ? searchDto.providers.map((p) => p as ProviderName)
@@ -178,7 +177,7 @@ export class PodcastSearchManager {
 
   private getBoundedLimit(limit?: number): number {
     const defaultLimit = this.configService.get<number>('podcastProviders.search.defaultLimit') || 20;
-    const maxLimit = this.configService.get<number>('podcastProviders.search.maxLimit') || 50;
+    const maxLimit = this.configService.get<number>('podcastProviders.search.maxLimit') || 200;
     const requested = limit || defaultLimit;
     return Math.min(Math.max(requested, 1), maxLimit);
   }

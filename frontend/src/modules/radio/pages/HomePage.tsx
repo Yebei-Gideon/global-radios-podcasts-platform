@@ -89,14 +89,54 @@ export const HomePage: React.FC = () => {
     );
   };
 
-  const loadLocalStations = async (countryName: string) => {
+  const loadLocalStations = async (countryName: string, countryCode?: string | null) => {
     try {
       console.log('[HomePage] Loading local stations for country:', countryName);
       setIsLoading(true);
       setError(null);
-      const response = await apiService.searchStations({ country: countryName, limit: 12 });
-      console.log('[HomePage] Local stations response:', response);
-      setStations(response.data);
+
+      const collectedStations: RadioStation[] = [];
+      const seenStationIds = new Set<string>();
+      const pageSize = 200;
+      const maxPages = 50;
+
+      const fetchCountryPage = async (country: string, page: number) =>
+        apiService.searchStations({ country, page, limit: pageSize });
+
+      let currentCountry = countryName;
+      let page = 1;
+      let shouldRetryWithCode = !!countryCode;
+
+      while (page <= maxPages) {
+        const response = await fetchCountryPage(currentCountry, page);
+        const batch = response.data || [];
+
+        if (batch.length === 0) {
+          if (!collectedStations.length && shouldRetryWithCode && countryCode && currentCountry !== countryCode) {
+            currentCountry = countryCode;
+            page = 1;
+            shouldRetryWithCode = false;
+            continue;
+          }
+          break;
+        }
+
+        for (const station of batch) {
+          if (!seenStationIds.has(station.id)) {
+            seenStationIds.add(station.id);
+            collectedStations.push(station);
+          }
+        }
+
+        if (batch.length < pageSize) {
+          break;
+        }
+
+        page += 1;
+      }
+
+      console.log('[HomePage] Local stations collected:', collectedStations.length);
+      setStations(collectedStations);
     } catch (err) {
       console.error('[HomePage] Error loading local stations:', err);
       setError('Failed to load local stations. Please try again later.');
@@ -137,11 +177,11 @@ export const HomePage: React.FC = () => {
   useEffect(() => {
     if (location.country) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      loadLocalStations(location.country);
+      loadLocalStations(location.country, location.countryCode);
     } else {
       loadPopularStations();
     }
-  }, [location.country]);
+  }, [location.country, location.countryCode]);
 
   console.log('[HomePage] Current render state:', {
     isLoading,
