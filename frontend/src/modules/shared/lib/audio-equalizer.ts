@@ -95,7 +95,7 @@ export const RECOMMENDED_EQUALIZER_PRESETS: EqualizerPreset[] = [
 ];
 
 const DEFAULT_BANDS = RECOMMENDED_EQUALIZER_PRESETS[0].gains;
-const DEFAULT_VOLUME = 0.7;
+const DEFAULT_VOLUME: number = 0.7;
 const MIN_GAIN = -12;
 const MAX_GAIN = 12;
 

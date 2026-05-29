@@ -20,7 +20,22 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ podcast }) => {
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { currentEpisode, isPlaying, playPodcast, setQueue } = usePodcastPlayer();
+  const { currentPodcast, currentEpisode, isPlaying, playPodcast, setQueue } = usePodcastPlayer();
+
+  // When the current episode changes, try to scroll it into view in the sidebar
+  useEffect(() => {
+    if (!currentEpisode) return;
+    const id = String(currentEpisode.id);
+    // Find the card element and scroll into view
+    const el = document.querySelector(`[data-episode-id="${id}"]`);
+    if (el && 'scrollIntoView' in el) {
+      try {
+        (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [currentEpisode]);
 
   // Filtered episodes based on search (must be after episodes is declared)
   const filteredEpisodes = episodes.filter((episode, idx) => {
@@ -174,12 +189,16 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ podcast }) => {
             },
           }}
         >
-          {filteredEpisodes.map((episode) => {
+            {filteredEpisodes.map((episode) => {
             // Find the original index for episode number display
             const origIndex = episodes.findIndex(e => e.id === episode.id);
-            const currentId = currentEpisode?.id ? String(currentEpisode.id) : undefined;
-            const episodeId = episode.id ? String(episode.id) : undefined;
-            const isCurrentEpisode = currentId && episodeId ? currentId === episodeId : false;
+            const isCurrentEpisode = Boolean(
+              currentEpisode &&
+                episode.id &&
+                currentEpisode.id === episode.id &&
+                currentPodcast &&
+                currentPodcast.id === podcast.id
+            );
             const key = episode.id ? String(episode.id) : `episode-${origIndex}`;
 
             return (
@@ -190,14 +209,16 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ podcast }) => {
                   visible: { opacity: 1, x: 0 },
                 }}
               >
-                <Card
-                  className={`p-4 cursor-pointer transition-all ${
-                    isCurrentEpisode
-                      ? 'bg-purple-900/30 border-purple-600 ring-2 ring-purple-500'
-                      : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
-                  }`}
-                  onClick={() => handlePlayEpisode(episode)}
-                >
+                    <Card
+                      data-episode-id={episode.id}
+                      aria-current={isCurrentEpisode ? 'true' : undefined}
+                      className={`p-4 cursor-pointer transition-all ${
+                        isCurrentEpisode
+                          ? 'bg-purple-900/30 border-purple-600 ring-2 ring-purple-500'
+                          : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                      }`}
+                      onClick={() => handlePlayEpisode(episode)}
+                    >
                   <div className="flex items-start gap-4">
                     {/* Play Button / Now Playing Indicator */}
                     <div className="flex-shrink-0 mt-1">
@@ -224,13 +245,20 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ podcast }) => {
 
                     {/* Episode Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-semibold mb-2 truncate ${
-                        isCurrentEpisode
-                          ? 'text-purple-300'
-                          : 'text-white'
-                      }`}>
-                        {origIndex + 1}. {episode.title}
-                      </h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className={`font-semibold truncate ${
+                          isCurrentEpisode
+                            ? 'text-purple-300'
+                            : 'text-white'
+                        }`}>
+                          {origIndex + 1}. {episode.title}
+                        </h4>
+                        {isCurrentEpisode && (
+                          <span className="text-xs text-purple-100 bg-purple-700/40 px-2 py-0.5 rounded-full">
+                            Now playing
+                          </span>
+                        )}
+                      </div>
                       {episode.description && (
                         <p className="text-sm text-slate-400 line-clamp-2 mb-2">
                           {cleanDescription(episode.description, 180)}

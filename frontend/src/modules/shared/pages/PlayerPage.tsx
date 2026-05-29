@@ -67,7 +67,7 @@ export const PlayerPage: React.FC<PlayerPageProps> = ({ onClose }) => {
   const activeType = isRadioActive ? 'radio' : isPodcastActive ? 'podcast' : null;
   const activeLabel = isRadioActive ? 'Live radio' : isPodcastActive ? 'Podcast episode' : 'Player';
   const activeDescription = isRadioActive
-    ? currentStation?.description || currentStation?.country || 'Streaming live audio'
+    ? currentStation?.name || currentStation?.country || 'Streaming live audio'
     : currentPodcast?.title || 'Select something to play';
   const activeSurfaceClass = isRadioActive
     ? 'from-sky-950 via-slate-950 to-slate-900'
