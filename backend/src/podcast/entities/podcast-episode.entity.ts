@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-import { Podcast } from './podcast.entity';
+import type { Podcast } from './podcast.entity';
 
 /**
  * PodcastEpisode entity - stores individual podcast episodes
@@ -44,6 +44,6 @@ export class PodcastEpisode {
   updatedAt: Date;
 
   // Relationship back to podcast
-  @ManyToOne(() => Podcast, (podcast) => podcast.episodes)
+  @ManyToOne('Podcast', (podcast: Podcast) => podcast.episodes)
   podcast: Podcast;
 }

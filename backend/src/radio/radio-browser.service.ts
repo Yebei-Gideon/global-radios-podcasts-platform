@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { resolveRadioBrowserBaseUrls } from './providers/radio-browser-hosts';
 
 /**
  * Service to interact with Radio Browser API
@@ -9,18 +10,22 @@ import axios, { AxiosInstance } from 'axios';
 @Injectable()
 export class RadioBrowserService {
   private readonly logger = new Logger(RadioBrowserService.name);
-  private readonly baseUrls: string[];
+  private readonly preferredBaseUrl: string;
+  private baseUrlsPromise: Promise<string[]> | null = null;
   private currentBaseUrl: string;
 
   constructor() {
     const envBase = process.env.RADIO_BROWSER_API_URL;
-    this.baseUrls = [
-      envBase || 'https://de1.api.radio-browser.info',
-      'https://nl1.api.radio-browser.info',
-      'https://at1.api.radio-browser.info',
-      'https://fr1.api.radio-browser.info',
-    ];
-    this.currentBaseUrl = this.baseUrls[0];
+    this.preferredBaseUrl = envBase?.replace(/\/+$/, '') || '';
+    this.currentBaseUrl = this.preferredBaseUrl || 'https://de1.api.radio-browser.info';
+  }
+
+  private getBaseUrls(): Promise<string[]> {
+    if (!this.baseUrlsPromise) {
+      this.baseUrlsPromise = resolveRadioBrowserBaseUrls(this.preferredBaseUrl || undefined);
+    }
+
+    return this.baseUrlsPromise;
   }
 
   private createAxios(baseURL: string): AxiosInstance {
@@ -38,8 +43,9 @@ export class RadioBrowserService {
    */
   private async requestWithFallback<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const errors: Array<string> = [];
+    const baseUrls = await this.getBaseUrls();
 
-    for (const base of this.baseUrls) {
+    for (const base of baseUrls) {
       try {
         const client = this.createAxios(base);
         const response = await client.get<T>(endpoint, { params });

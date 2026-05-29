@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { ProviderRadioResult, RadioProviderConfig, RadioProviderName, RadioProviderSearchParams } from '../types/radio-search.types';
 import { BaseRadioProvider } from './base-radio-provider';
+import { resolveRadioBrowserBaseUrls } from './radio-browser-hosts';
 
 /**
  * Radio Browser Provider
@@ -12,31 +13,30 @@ import { BaseRadioProvider } from './base-radio-provider';
 export class RadioBrowserProvider implements BaseRadioProvider {
   readonly name: RadioProviderName = 'radio_browser';
   private readonly logger = new Logger(RadioBrowserProvider.name);
-  private readonly baseUrls: string[];
+  private preferredBaseUrl: string;
+  private baseUrlsPromise: Promise<string[]> | null = null;
   private currentBaseUrl: string;
   private config: RadioProviderConfig;
 
   constructor() {
     const envBase = process.env.RADIO_BROWSER_API_URL;
-    this.baseUrls = [
-      envBase || 'https://de1.api.radio-browser.info',
-      'https://nl1.api.radio-browser.info',
-      'https://at1.api.radio-browser.info',
-      'https://fr1.api.radio-browser.info',
-    ];
-    this.currentBaseUrl = this.baseUrls[0];
+    this.preferredBaseUrl = envBase?.replace(/\/+$/, '') || '';
+    this.currentBaseUrl = this.preferredBaseUrl || 'https://de1.api.radio-browser.info';
   }
 
   configure(config: RadioProviderConfig): void {
     this.config = config;
     if (config.baseUrl) {
-      this.baseUrls.unshift(config.baseUrl);
-      this.currentBaseUrl = config.baseUrl;
+      this.preferredBaseUrl = config.baseUrl.replace(/\/+$/, '');
+      this.currentBaseUrl = this.preferredBaseUrl;
+      this.baseUrlsPromise = null;
     }
   }
 
   async isAvailable(): Promise<boolean> {
     try {
+      const [firstBaseUrl] = await this.getBaseUrls();
+      this.currentBaseUrl = firstBaseUrl || this.currentBaseUrl;
       const client = this.createAxios(this.currentBaseUrl);
       await client.get('/json/stats', { timeout: 5000 });
       return true;
@@ -96,10 +96,19 @@ export class RadioBrowserProvider implements BaseRadioProvider {
     });
   }
 
+  private getBaseUrls(): Promise<string[]> {
+    if (!this.baseUrlsPromise) {
+      this.baseUrlsPromise = resolveRadioBrowserBaseUrls(this.preferredBaseUrl || undefined);
+    }
+
+    return this.baseUrlsPromise;
+  }
+
   private async requestWithFallback<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const errors: Array<string> = [];
+    const baseUrls = await this.getBaseUrls();
 
-    for (const base of this.baseUrls) {
+    for (const base of baseUrls) {
       try {
         const client = this.createAxios(base);
         const response = await client.get<T>(endpoint, { params });
