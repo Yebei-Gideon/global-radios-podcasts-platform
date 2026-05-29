@@ -87,9 +87,16 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ podcast }) => {
 
   const handlePlayAll = () => {
     if (episodes.length > 0) {
+      // Ensure Play All starts from episode 1 (oldest) and queues in ascending order
+      const ordered = [...episodes].slice().sort((a, b) => {
+        const ta = a.publishDate ? new Date(a.publishDate).getTime() : 0;
+        const tb = b.publishDate ? new Date(b.publishDate).getTime() : 0;
+        return ta - tb;
+      });
+
       // Ensure current podcast is set before queueing so global player can appear
-      playPodcast(podcast, episodes[0]);
-      setQueue(episodes, 0);
+      playPodcast(podcast, ordered[0]);
+      setQueue(ordered, 0);
     }
   };
 

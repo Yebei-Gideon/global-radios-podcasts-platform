@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 import type { Podcast, PodcastEpisode } from '../types/podcast.types';
 import { useGlobalAudioManager } from '@/modules/shared/context/GlobalAudioManager';
 import { useAudioEqualizer, type EqualizerController } from '@/modules/shared/lib/audio-equalizer';
+import { apiService } from '@/services/api.service';
 
 interface PodcastPlayerContextType {
   // Current State
@@ -23,6 +24,8 @@ interface PodcastPlayerContextType {
   queue: PodcastEpisode[];
   queueIndex: number;
   isLooping: boolean;
+  suggestions: Podcast[];
+  fetchSuggestions: (limit?: number) => Promise<void>;
 
   // Methods
   playPodcast: (podcast: Podcast, episode: PodcastEpisode) => void;
@@ -71,6 +74,7 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   const [queue, setQueueState] = useState<PodcastEpisode[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [isLooping, setIsLooping] = useState(false);
+  const [suggestions, setSuggestions] = useState<Podcast[]>([]);
 
   // Audio Reference
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -234,9 +238,10 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
   const nextEpisode = () => {
     if (queue.length === 0) return;
     const nextIndex = queueIndex + 1;
-    // If at end and not looping, stop
+    // If at end and not looping, stop and fetch suggestions
     if (nextIndex >= queue.length && !isLooping) {
       pause();
+      void fetchSuggestions(6);
       return;
     }
     // Loop back to start if needed
@@ -286,6 +291,16 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLooping(!isLooping);
   };
 
+  const fetchSuggestions = async (limit = 6) => {
+    try {
+      const recs = await apiService.getPopularPodcasts(limit);
+      setSuggestions(recs);
+    } catch (err) {
+      console.warn('Failed to fetch suggestions', err);
+      setSuggestions([]);
+    }
+  };
+
   return (
     <PodcastPlayerContext.Provider
       value={{
@@ -300,6 +315,8 @@ export const PodcastPlayerProvider: React.FC<{ children: React.ReactNode }> = ({
         isMuted: equalizer.isMuted,
         playbackRate,
         equalizer,
+        suggestions,
+        fetchSuggestions,
         queue,
         queueIndex,
         isLooping,
