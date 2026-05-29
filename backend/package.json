@@ -6,7 +6,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "bunx --bun nest build",
-    "start": "bun dist/main.js",
+    "start": "bun dist/src/main.js",
     "dev": "nodemon --watch src --exec ts-node src/main.ts",
     "migrate:run": "bun run --bun run-migrations.ts",
     "migration:generate": "bunx typeorm migration:generate -d ./data-source.ts",
