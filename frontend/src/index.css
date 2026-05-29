@@ -13,19 +13,487 @@
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
   .btn-secondary {
     @apply bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium py-2 px-4 rounded-lg transition-colors;
   }
-  
+
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow;
   }
-  
+
   .input {
     @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
 }
 
 
+/* Base document resets and system overrides */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-size: 62.5%;
+    font-family: var(--font-poppins);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-white);
+    color: var(--color-zinc-900);
+  }
 
+  html.dark {
+    background-color: var(--color-gray-950);
+    color: var(--color-zinc-50);
+  }
+
+  body {
+    font-family: var(--font-poppins);
+  }
+
+  /* Code typographic system elements */
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-typewriter-clean), ui-monospace, monospace;
+  }
+
+  /* Clear typographic display hierarchy balance */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), serif;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+}
+
+/*
+* Custom Modern Design System Theme Specification (Tailwind v4 Compliant Syntax)
+*/
+@theme static {
+  --font-poppins: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-typewriter-clean: "IBM Plex Mono", monospace;
+  --font-typewriter-raw: "Special Elite", serif;
+  --font-typewriter: "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-display: "Playfair Display", serif;
+
+  /* Strict high-fidelity primary brand teal palette overrides */
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
+
+  /* Custom green success states mapping */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
+  --color-success-950: #022c22;
+
+  /* Clean functional structural hardware-accelerated fluid keyframes animations */
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
+  --animate-fade-in-down: fade-in-down 0.5s ease-out both;
+  --animate-slide-in-left: slide-in-left 0.5s ease-out both;
+  --animate-slide-in-right: slide-in-right 0.5s ease-out both;
+  --animate-scale-in: scale-in 0.4s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 2s ease-in-out infinite;
+  --animate-gradient: gradient-shift 8s ease infinite;
+  --animate-count-up: count-up 1s ease-out both;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+}
+
+/* better pages transitions */
+/* .page-enter-active,
+  .page-leave-active {
+    @apply transition-opacity duration-300;
+  }
+
+  .page-enter-from,
+  .page-leave-to {
+    @apply opacity-0;
+  } */
+
+/* Disable native cross-fading browser blends so our circular mask maps accurately */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Ensure global layer bounds remain visible during complex clip path shifts */
+::view-transition-old(root) {
+  animation: scale-down 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  z-index: 1;
+}
+
+@keyframes scale-down {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0.98);
+  }
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* 🛠️ ENHANCED: Swaps the z-index stack layer orientation during light theme inward collapses */
+.light::view-transition-old(root) {
+  z-index: 9999;
+}
+.light::view-transition-new(root) {
+  z-index: 1;
+}
+
+/* Force dark/light theme background surfaces to remain opaque inside image transition capturing loops */
+.dark::view-transition-old(root) {
+  background-color: #09090b !important;
+}
+.light::view-transition-old(root) {
+  background-color: #ffffff !important;
+}
+
+/* ─── Staggered animations ─── */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+
+.stagger-6 {
+  animation-delay: 0.6s;
+}
+
+.stagger-7 {
+  animation-delay: 0.7s;
+}
+
+.stagger-8 {
+  animation-delay: 0.8s;
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-float,
+  .animate-pulse-soft,
+  .animate-shimmer,
+  .animate-gradient,
+  .animate-glow,
+  .animate-count-up,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
+
+/* ─── Scroll-triggered animate on visible ─── */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Custom Skeleton Loader ─── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-200) 37%,
+    var(--color-gray-100) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 0.5rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-800) 25%,
+    var(--color-gray-700) 37%,
+    var(--color-gray-800) 63%
+  );
+  background-size: 400% 100%;
+}
+
+/* ─── Gradient text utility ─── */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--color-teal-500),
+    var(--color-teal-300),
+    var(--color-blue-500)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(
+    135deg,
+    var(--color-amber-400),
+    var(--color-orange-500),
+    var(--color-red-500)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Glassmorphism card ─── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(51, 65, 85, 0.4);
+}
+
+/* ─── Gradient backgrounds ─── */
+.bg-gradient-radial {
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(from var(--color-teal-500) r g b / 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      rgba(from var(--color-blue-500) r g b / 0.06),
+      transparent 50%
+    );
+}
+
+.dark .bg-gradient-radial {
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(from var(--color-teal-500) r g b / 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      rgba(from var(--color-blue-500) r g b / 0.08),
+      transparent 50%
+    );
+}
+
+.bg-mesh-gradient {
+  background:
+    radial-gradient(
+      at 0% 0%,
+      rgba(from var(--color-teal-500) r g b / 0.08) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 100% 0%,
+      rgba(from var(--color-blue-500) r g b / 0.06) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 100% 100%,
+      rgba(from var(--color-purple-500) r g b / 0.04) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 0% 100%,
+      rgba(from var(--color-teal-500) r g b / 0.06) 0px,
+      transparent 50%
+    );
+}
+
+/* ─── Interactive card hover ─── */
+.hover-lift {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Grid pattern overlay ─── */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* ─── Dot pattern ─── */
+.dot-pattern {
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+.noise-pattern {
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.08) 0.75px,
+    transparent 0.9px
+  );
+  background-size: 10px 10px;
+}
+
+.dark .noise-pattern {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.08) 0.75px,
+    transparent 0.9px
+  );
+}
+
+.dark .dot-pattern {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px
+  );
+}
+
+/* ─── Smooth page transitions ─── */
+.page-enter-active,
+.page-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.layout-enter-active,
+.layout-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.layout-enter-from,
+.layout-leave-to {
+  opacity: 0;
+}
+
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-gray-600);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-500);
+}
+
+/* ─── Focus ring consistency ─── */
+*:focus-visible {
+  outline: 2px solid var(--color-teal-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Smooth transitions on color mode change ─── */
+html.color-mode-transition,
+html.color-mode-transition *,
+html.color-mode-transition *::before,
+html.color-mode-transition *::after {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.2s ease !important;
+  transition-delay: 0s !important;
+}

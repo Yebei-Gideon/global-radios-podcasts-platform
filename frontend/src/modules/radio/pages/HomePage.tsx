@@ -1,8 +1,12 @@
 import { Button, Card } from '@/modules/shared/components/ui';
+import { Tabs, TabsList, TabsTrigger } from '@/modules/shared/components/ui/tabs';
 import { apiService } from '@/services/api.service';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, CheckCircle, MapPin, Radio as RadioIcon, TrendingUp } from 'lucide-react';
+import { AlertCircle, CheckCircle, MapPin, Mic, Radio as RadioIcon, TrendingUp } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { ModernPodcastCard } from '@/modules/podcast/components/ModernPodcastCard';
+import { EpisodeList } from '@/modules/podcast/components/EpisodeList';
+import type { Podcast } from '@/modules/podcast/types/podcast.types';
 import { ModernStationCard } from '../components/ModernStationCard';
 import type { RadioStation } from '../types/radio.types';
 
@@ -21,8 +25,13 @@ interface LocationState {
 export const HomePage: React.FC = () => {
   const [stations, setStations] = useState<RadioStation[]>([]);
   const [popularStations, setPopularStations] = useState<RadioStation[]>([]);
+  const [podcasts, setPodcasts] = useState<Podcast[]>([]);
+  const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null);
+  const [activeTab, setActiveTab] = useState<'radio' | 'podcasts'>('radio');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPodcasts, setIsLoadingPodcasts] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [podcastError, setPodcastError] = useState<string | null>(null);
   const [location, setLocation] = useState<LocationState>({
     country: null,
     countryCode: null,
@@ -165,6 +174,53 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  const loadLocalPodcasts = async (countryName: string, countryCode?: string | null) => {
+    try {
+      console.log('[HomePage] Loading local podcasts for country:', countryName);
+      setIsLoadingPodcasts(true);
+      setPodcastError(null);
+
+      const providers = ['apple', 'podcast_index', 'taddy'];
+      const queries = [
+        `${countryName} podcast`,
+        countryName,
+        countryCode ? `${countryCode} podcast` : null,
+        'podcast',
+      ].filter((value): value is string => Boolean(value));
+
+      const collectedPodcasts: Podcast[] = [];
+      const seenPodcastIds = new Set<string>();
+
+      for (const query of queries) {
+        const response = await apiService.searchPodcasts({
+          query,
+          providers,
+          limit: 12,
+        });
+
+        for (const podcast of response || []) {
+          const podcastKey = podcast.id || podcast.title;
+          if (!seenPodcastIds.has(podcastKey)) {
+            seenPodcastIds.add(podcastKey);
+            collectedPodcasts.push(podcast);
+          }
+        }
+
+        if (collectedPodcasts.length >= 12) {
+          break;
+        }
+      }
+
+      setPodcasts(collectedPodcasts.slice(0, 12));
+    } catch (err) {
+      console.error('[HomePage] Error loading local podcasts:', err);
+      setPodcastError('Failed to load podcasts for your location.');
+      setPodcasts([]);
+    } finally {
+      setIsLoadingPodcasts(false);
+    }
+  };
+
   const viewMode = location.country ? 'local' : 'popular';
   const displayStations = location.country ? stations : popularStations;
 
@@ -180,6 +236,15 @@ export const HomePage: React.FC = () => {
       loadLocalStations(location.country, location.countryCode);
     } else {
       loadPopularStations();
+    }
+  }, [location.country, location.countryCode]);
+
+  useEffect(() => {
+    if (location.country) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadLocalPodcasts(location.country, location.countryCode);
+    } else {
+      loadLocalPodcasts('podcast');
     }
   }, [location.country, location.countryCode]);
 
@@ -255,9 +320,10 @@ export const HomePage: React.FC = () => {
                     <h3 className="font-semibold text-lg text-green-900 dark:text-green-100">
                       Broadcasting from {location.country}
                     </h3>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      Showing {displayStations.length} local radio stations
-                    </p>
+                    <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                      <p>Showing {displayStations.length} local radio stations</p>
+                      <p>Showing {podcasts.length} local podcasts</p>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -296,8 +362,36 @@ export const HomePage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* Stations Section */}
-      <div className="container mx-auto px-4 py-12">
+      {/* View Tabs */}
+      <div className="container mx-auto px-4 pt-8">
+        <Tabs className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-xl shadow-sm">
+            <TabsTrigger
+              type="button"
+              data-state={activeTab === 'radio' ? 'active' : 'inactive'}
+              aria-selected={activeTab === 'radio'}
+              onClick={() => setActiveTab('radio')}
+              className="flex items-center gap-2"
+            >
+              <RadioIcon className="w-4 h-4" />
+              Radios
+            </TabsTrigger>
+            <TabsTrigger
+              type="button"
+              data-state={activeTab === 'podcasts' ? 'active' : 'inactive'}
+              aria-selected={activeTab === 'podcasts'}
+              onClick={() => setActiveTab('podcasts')}
+              className="flex items-center gap-2"
+            >
+              <Mic className="w-4 h-4" />
+              Podcasts
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {activeTab === 'radio' && (
+        <div className="container mx-auto px-4 py-12">
         {(() => {
           console.log('[HomePage RENDER] isLoading:', isLoading, 'displayStations.length:', displayStations.length, 'viewMode:', viewMode);
           return null;
@@ -399,7 +493,177 @@ export const HomePage: React.FC = () => {
               ))}
           </motion.div>
         )}
-      </div>
+        </div>
+      )}
+
+      {activeTab === 'podcasts' && (
+        <div className="container mx-auto px-4 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-pink-100 dark:bg-pink-900/30">
+                <Mic className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+              </div>
+              {location.country ? `Podcasts in ${location.country}` : 'Popular Podcasts'}
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              {location.country
+                ? `Podcasts discovered for listeners in ${location.country}`
+                : 'Popular podcasts from the wider catalog'}
+            </p>
+          </div>
+          <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {podcasts.length} podcast{podcasts.length !== 1 ? 's' : ''} found
+          </div>
+        </div>
+
+        {podcastError && (
+          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-lg mb-6 flex items-center justify-between">
+            <span>{podcastError}</span>
+            <Button
+              onClick={() => {
+                if (location.country) {
+                  loadLocalPodcasts(location.country, location.countryCode);
+                } else {
+                  loadLocalPodcasts('podcast');
+                }
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {isLoadingPodcasts ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="p-4 animate-pulse">
+                <div className="space-y-3">
+                  <div className="w-full h-48 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : podcasts.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Mic className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+            <h3 className="text-xl font-semibold mb-2">
+              {location.country ? `No podcasts found in ${location.country}` : 'No podcasts found'}
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-xl mx-auto">
+              {location.country
+                ? `We could not find any location-specific podcasts for ${location.country} right now. You can browse the global podcast catalog instead.`
+                : 'Unable to load podcasts right now. Try again or browse the global catalog.'}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                onClick={() => {
+                  if (location.country) {
+                    loadLocalPodcasts('podcast');
+                  } else {
+                    loadLocalPodcasts('podcast');
+                  }
+                }}
+              >
+                Browse Global Podcasts
+              </Button>
+              {location.country && (
+                <Button
+                  variant="outline"
+                  onClick={() => loadLocalPodcasts(location.country!, location.countryCode)}
+                >
+                  Try Location Again
+                </Button>
+              )}
+            </div>
+          </Card>
+        ) : (
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.05,
+                },
+              },
+            }}
+          >
+            {podcasts.map((podcast) => (
+              <motion.div
+                key={podcast.id || podcast.title}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+              >
+                <ModernPodcastCard podcast={podcast} onSelect={setSelectedPodcast} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {selectedPodcast && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedPodcast(null)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+            />
+            <motion.div
+              key={selectedPodcast.id || selectedPodcast.title}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed top-16 right-0 bottom-0 w-full md:w-[460px] lg:w-[500px] bg-slate-900 text-white border-l border-slate-800 shadow-2xl z-[70] overflow-y-auto"
+            >
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  {selectedPodcast.imageUrl && (
+                    <img
+                      src={selectedPodcast.imageUrl}
+                      alt={selectedPodcast.title}
+                      className="w-14 h-14 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs text-slate-400">Episodes</p>
+                    <h3 className="text-lg font-bold line-clamp-2">{selectedPodcast.title}</h3>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <span className="px-2 py-1 bg-slate-700 rounded text-xs">
+                        {selectedPodcast.source?.replace('_', ' ') || 'podcast'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPodcast(null)}
+                    className="ml-auto rounded-md px-3 py-2 text-sm bg-slate-800 hover:bg-slate-700"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="border border-slate-800 rounded-xl p-4 bg-slate-900/60">
+                  <EpisodeList podcast={selectedPodcast} />
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </div>
   );
