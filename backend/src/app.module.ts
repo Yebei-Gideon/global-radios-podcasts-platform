@@ -7,8 +7,10 @@ import databaseConfig from './config/database.config';
 import podcastConfig from './config/podcast.config';
 import radioConfig from './config/radio.config';
 import redisConfig from './config/redis.config';
+import tvConfig from './config/tv.config';
 import { PodcastModule } from './podcast/podcast.module';
 import { RadioModule } from './radio/radio.module';
+import { LiveTvModule } from './tv/live-tv.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -16,7 +18,7 @@ import { AppController } from './app.controller';
     // Global configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, redisConfig, podcastConfig, radioConfig],
+      load: [databaseConfig, redisConfig, podcastConfig, radioConfig, tvConfig],
     }),
 
     // Database connection (PostgreSQL) — single root connection, migrations enabled
@@ -81,6 +83,7 @@ import { AppController } from './app.controller';
     // Feature modules
     RadioModule,
     PodcastModule,
+    LiveTvModule,
     // TODO Phase 2: Add UserModule (auth, favorites)
   ],
   controllers: [AppController],

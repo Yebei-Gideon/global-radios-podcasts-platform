@@ -1,5 +1,10 @@
 import type { Podcast, PodcastEpisode, PodcastSearchParams, ProviderStatus } from '@/modules/podcast/types/podcast.types';
 import type {
+  LiveTvChannel,
+  LiveTvProviderStatus,
+  LiveTvSearchParams,
+} from '@/modules/tv/types/live-tv.types';
+import type {
   Country,
   PaginatedResponse,
   RadioStation,
@@ -217,6 +222,41 @@ class ApiService {
       console.warn('Podcast trending endpoint not available:', error);
       return [];
     }
+  }
+
+  // ============ Live TV APIs ============
+
+  /**
+   * Get paginated live TV channels from all enabled providers
+   */
+  async getLiveTvChannels(page = 1, limit = 24): Promise<PaginatedResponse<LiveTvChannel>> {
+    const response = await this.axiosInstance.get<PaginatedResponse<LiveTvChannel>>('/tv/channels', {
+      params: { page, limit },
+    });
+    return response.data;
+  }
+
+  /**
+   * Search live TV channels across multiple providers
+   */
+  async searchLiveTv(params: LiveTvSearchParams): Promise<PaginatedResponse<LiveTvChannel>> {
+    const requestParams = {
+      ...params,
+      providers: params.providers?.length ? params.providers.join(',') : undefined,
+    };
+
+    const response = await this.axiosInstance.get<PaginatedResponse<LiveTvChannel>>('/tv/search', {
+      params: requestParams,
+    });
+    return response.data;
+  }
+
+  /**
+   * Get live TV provider statuses
+   */
+  async getLiveTvProviders(): Promise<Record<string, LiveTvProviderStatus>> {
+    const response = await this.axiosInstance.get<Record<string, LiveTvProviderStatus>>('/tv/providers');
+    return response.data;
   }
 }
 

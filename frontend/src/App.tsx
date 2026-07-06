@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Radio, Compass, Library, Sun, Moon, Mic, Play } from 'lucide-react';
+import { Menu, X, Radio, Compass, Library, Sun, Moon, Mic, Play, Tv } from 'lucide-react';
 import { HomePage } from '@/modules/radio/pages/HomePage';
 import RadioExplorerPage from './modules/radio/pages/RadioExplorerPage';
 import { PodcastsPage } from '@/modules/podcast/pages/PodcastsPage';
+import LiveTvPage from '@/modules/tv/pages/LiveTvPage';
 import { LibraryPage } from '@/modules/library/pages/LibraryPage';
 import PlayerPage from '@/modules/shared/pages/PlayerPage';
 import { GlobalAudioManagerProvider } from '@/modules/shared/context/GlobalAudioManager';
@@ -14,7 +15,7 @@ import { useAudio } from '@/modules/radio/context/AudioContext';
 import { usePodcastPlayer } from '@/modules/podcast/context/PodcastPlayerContext';
 import { Button } from '@/modules/shared/components/ui';
 
-type Page = 'home' | 'radio' | 'podcasts' | 'library';
+type Page = 'home' | 'radio' | 'tv' | 'podcasts' | 'library';
 
 /**
  * Modern App Component with unified Player Page
@@ -60,6 +61,8 @@ function AppContent() {
         return <HomePage />;
       case 'radio':
         return <RadioExplorerPage />;
+      case 'tv':
+        return <LiveTvPage />;
       case 'podcasts':
         return <PodcastsPage />;
       case 'library':
@@ -72,6 +75,7 @@ function AppContent() {
   const navItems = [
     { label: 'Home', page: 'home' as Page, icon: Compass },
     { label: 'Radio', page: 'radio' as Page, icon: Radio },
+    { label: 'TV', page: 'tv' as Page, icon: Tv },
     { label: 'Podcasts', page: 'podcasts' as Page, icon: Mic },
     { label: 'Library', page: 'library' as Page, icon: Library },
   ];
