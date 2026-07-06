@@ -21,7 +21,7 @@ RUN bun run build
 FROM oven/bun:1.3.8 AS production-deps
 WORKDIR /app
 COPY package.json bun.lock ./
-RUN bun install --production --no-check
+RUN bun install --production --no-check --no-frozen-lockfile
 
 # --- Stage 3: Runtime Stage ---
 FROM oven/bun:1.3.8 AS runner
