@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { BasePodcastProvider } from './base-provider';
 import { ProviderConfig, ProviderPodcastResult, ProviderSearchParams, ProviderName } from '../types/podcast-search.types';
 import { RateLimiterService } from '../rate-limiter.service';
+import { getErrorMessage } from '../../common/utils/error-message.util';
 
 @Injectable()
 export class TaddyProvider implements BasePodcastProvider {
@@ -95,7 +96,7 @@ export class TaddyProvider implements BasePodcastProvider {
         explicit: false,
       }));
     } catch (error) {
-      this.logger.warn(`Taddy search failed: ${error.message}`);
+      this.logger.warn(`Taddy search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }

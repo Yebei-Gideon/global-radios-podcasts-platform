@@ -1,7 +1,6 @@
 import { ModernStationCard } from '@/modules/radio/components/ModernStationCard';
-import type { Country, RadioStation } from '@/modules/radio/types/radio.types';
+import { useRadioExplorer } from '@/modules/radio/context/RadioExplorerContext';
 import { Button } from '@/modules/shared/components/ui';
-import { apiService } from '@/services/api.service';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -42,11 +41,15 @@ interface FilterStats {
  * - Recent search history
  */
 const RadioExplorerPage = () => {
-  // Data states
-  const [allStations, setAllStations] = useState<RadioStation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    allStations,
+    loading,
+    loadingMore,
+    error,
+    isNetworkError,
+    countries,
+    loadStations,
+  } = useRadioExplorer();
 
   // Search & Filter states
   const [searchInput, setSearchInput] = useState('');
@@ -54,19 +57,13 @@ const RadioExplorerPage = () => {
   const [filters, setFilters] = useState<FilterState>({});
   const [showFilters, setShowFilters] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [isNetworkError, setIsNetworkError] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  // Retry logic constants
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000;
-
   // UI states
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [countries, setCountries] = useState<Country[]>([]);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   // Calculate filter statistics
@@ -99,21 +96,6 @@ const RadioExplorerPage = () => {
 
     return stats;
   }, [allStations]);
-
-  // Retry with exponential backoff
-  const retryWithBackoff = useCallback(async (fn: () => Promise<any>, attempt: number = 0): Promise<any> => {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (attempt < MAX_RETRIES && (err.response?.status >= 500 || !navigator.onLine)) {
-        setIsNetworkError(!navigator.onLine);
-        const delay = RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return retryWithBackoff(fn, attempt + 1);
-      }
-      throw err;
-    }
-  }, [MAX_RETRIES, RETRY_DELAY]);
 
   // Save to recent searches
   const saveToRecentSearches = (query: string) => {
@@ -162,7 +144,6 @@ const RadioExplorerPage = () => {
     return filteredStations.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredStations, currentPage]);
 
-  // Fetch initial data with retry logic
   useEffect(() => {
     // Load recent searches from localStorage
     const saved = localStorage.getItem('radioRecentSearches');
@@ -173,75 +154,8 @@ const RadioExplorerPage = () => {
         console.warn('Failed to parse recent searches:', err);
       }
     }
-
-    const fetchInitialData = async () => {
-      setLoading(true);
-      setError(null);
-      setIsNetworkError(false);
-      try {
-        // Fetch first batch with retry logic
-        const firstBatch = await retryWithBackoff(async () =>
-          apiService.getStations(1, 100)
-        );
-        const stations: RadioStation[] = firstBatch.data || [];
-        setAllStations(stations);
-        setLoading(false);
-
-        // Fetch filter options in parallel
-        const filterPromise = retryWithBackoff(async () =>
-          apiService.getCountries()
-        )
-          .then((countriesData) => setCountries(countriesData))
-          .catch((err) => {
-            console.warn('Failed to fetch filter options:', err);
-          });
-
-        // Continue fetching remaining batches in background
-        const hasMore =
-          (firstBatch.meta?.page ?? 1) < (firstBatch.meta?.totalPages ?? 1) &&
-          (firstBatch.data?.length || 0) > 0;
-
-        if (hasMore) {
-          setLoadingMore(true);
-          let page = 2;
-          let continueLoading = true;
-
-          while (continueLoading) {
-            try {
-              const stationsData = await retryWithBackoff(async () =>
-                apiService.getStations(page, 100)
-              );
-
-              if (stationsData.data && stationsData.data.length > 0) {
-                setAllStations((prev) => [...prev, ...stationsData.data]);
-                const currentPageMeta = stationsData.meta?.page ?? page;
-                const totalPagesMeta = stationsData.meta?.totalPages ?? page;
-                continueLoading = currentPageMeta < totalPagesMeta;
-                page++;
-              } else {
-                continueLoading = false;
-              }
-            } catch (err) {
-              console.warn(`Failed to fetch page ${page}:`, err);
-              continueLoading = false;
-            }
-          }
-          setLoadingMore(false);
-        }
-
-        await filterPromise;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to load radio stations';
-        setError(message);
-        console.error('Error fetching stations:', err);
-        setIsNetworkError(!navigator.onLine);
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [retryWithBackoff]);
+    void loadStations();
+  }, [loadStations]);
 
   // Handle filter change with debouncing
   const handleFilterChange = useCallback((key: keyof FilterState, value: string | undefined) => {

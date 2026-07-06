@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { ProviderRadioResult, RadioProviderConfig, RadioProviderName, RadioProviderSearchParams } from '../types/radio-search.types';
 import { BaseRadioProvider } from './base-radio-provider';
+import { getErrorMessage } from '../../common/utils/error-message.util';
 
 /**
  * Radioplayer Partner API Provider
@@ -34,7 +35,7 @@ export class RadioplayerProvider implements BaseRadioProvider {
 			});
 			return true;
 		} catch (error) {
-			this.logger.warn(`Radioplayer provider unavailable: ${error.message}`);
+      this.logger.warn(`Radioplayer provider unavailable: ${getErrorMessage(error)}`);
 			return false;
 		}
 	}
@@ -87,7 +88,7 @@ export class RadioplayerProvider implements BaseRadioProvider {
 			this.logger.log(`Radioplayer provider returned ${filtered.length} stations`);
 			return filtered.slice(0, params.limit);
 		} catch (error) {
-			this.logger.error(`Radioplayer search failed: ${error.message}`);
+      this.logger.error(`Radioplayer search failed: ${getErrorMessage(error)}`);
 			return [];
 		}
 	}
@@ -104,7 +105,7 @@ export class RadioplayerProvider implements BaseRadioProvider {
 			const stations = response.data?.data || [];
 			return stations.map((s: any) => this.normalize(s));
 		} catch (error) {
-			this.logger.warn(`Radioplayer popular search failed: ${error.message}`);
+      this.logger.warn(`Radioplayer popular search failed: ${getErrorMessage(error)}`);
 			return [];
 		}
 	}
@@ -121,7 +122,7 @@ export class RadioplayerProvider implements BaseRadioProvider {
 			const stations = response.data?.data || [];
 			return stations.map((s: any) => this.normalize(s));
 		} catch (error) {
-			this.logger.warn(`Radioplayer name search failed: ${error.message}`);
+      this.logger.warn(`Radioplayer name search failed: ${getErrorMessage(error)}`);
 			return [];
 		}
 	}
@@ -138,7 +139,7 @@ export class RadioplayerProvider implements BaseRadioProvider {
 			const stations = response.data?.data || [];
 			return stations.map((s: any) => this.normalize(s));
 		} catch (error) {
-			this.logger.warn(`Radioplayer country search failed: ${error.message}`);
+      this.logger.warn(`Radioplayer country search failed: ${getErrorMessage(error)}`);
 			return [];
 		}
 	}

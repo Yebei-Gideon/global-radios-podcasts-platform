@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { BasePodcastProvider } from './base-provider';
 import { ProviderConfig, ProviderPodcastResult, ProviderSearchParams, ProviderName } from '../types/podcast-search.types';
 import { RateLimiterService } from '../rate-limiter.service';
+import { getErrorMessage } from '../../common/utils/error-message.util';
 
 @Injectable()
 export class PodcastIndexProvider implements BasePodcastProvider {
@@ -73,7 +74,7 @@ export class PodcastIndexProvider implements BasePodcastProvider {
         lastUpdated: feed.lastUpdateTime ? new Date(feed.lastUpdateTime * 1000).toISOString() : undefined,
       }));
     } catch (error) {
-      this.logger.warn(`Podcast Index search failed: ${error.message}`);
+      this.logger.warn(`Podcast Index search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }

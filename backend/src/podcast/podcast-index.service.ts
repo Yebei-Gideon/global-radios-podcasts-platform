@@ -1,12 +1,13 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import * as xml2js from 'xml2js';
+import { getErrorMessage } from '../common/utils/error-message.util';
 
 /**
  * Podcast Index Service
  * Integrates with Podcast Index API for discovering podcasts
  * Also handles RSS feed parsing for episode data
- * 
+ *
  * API Documentation: https://podcastindex-api.podarse.com/
  */
 @Injectable()
@@ -18,7 +19,7 @@ export class PodcastIndexService {
 
   constructor() {
     this.baseUrl = process.env.PODCAST_INDEX_API_URL || 'https://api.podcastindex.org/api/1.0';
-    
+
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
       timeout: 15000,
@@ -51,7 +52,7 @@ export class PodcastIndexService {
       this.logger.warn('Podcast Index search not yet fully implemented - requires API credentials');
       return [];
     } catch (error) {
-      this.logger.error('Failed to search podcasts', error.message);
+      this.logger.error('Failed to search podcasts', getErrorMessage(error));
       throw new HttpException(
         'Failed to search podcasts',
         HttpStatus.SERVICE_UNAVAILABLE,
@@ -71,7 +72,7 @@ export class PodcastIndexService {
       this.logger.warn('Trending podcasts endpoint not yet fully implemented');
       return [];
     } catch (error) {
-      this.logger.error('Failed to fetch trending podcasts', error.message);
+      this.logger.error('Failed to fetch trending podcasts', getErrorMessage(error));
       throw new HttpException(
         'Failed to fetch trending podcasts',
         HttpStatus.SERVICE_UNAVAILABLE,
@@ -88,7 +89,7 @@ export class PodcastIndexService {
       this.logger.warn(`Fetching podcasts for category: ${category}`);
       return [];
     } catch (error) {
-      this.logger.error('Failed to fetch podcasts by category', error.message);
+      this.logger.error('Failed to fetch podcasts by category', getErrorMessage(error));
       throw new HttpException(
         'Failed to fetch podcasts',
         HttpStatus.SERVICE_UNAVAILABLE,
@@ -148,7 +149,7 @@ export class PodcastIndexService {
 
       return { podcast, episodes };
     } catch (error) {
-      this.logger.error(`Failed to fetch/parse RSS feed: ${rssUrl}`, error.message);
+      this.logger.error(`Failed to fetch/parse RSS feed: ${rssUrl}`, getErrorMessage(error));
       throw new HttpException(
         'Failed to fetch podcast episodes',
         HttpStatus.BAD_REQUEST,

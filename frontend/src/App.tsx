@@ -8,6 +8,7 @@ import { LibraryPage } from '@/modules/library/pages/LibraryPage';
 import PlayerPage from '@/modules/shared/pages/PlayerPage';
 import { GlobalAudioManagerProvider } from '@/modules/shared/context/GlobalAudioManager';
 import { AudioProvider } from '@/modules/radio/context/AudioContext';
+import { RadioExplorerProvider } from '@/modules/radio/context/RadioExplorerContext';
 import { PodcastPlayerProvider } from '@/modules/podcast/context/PodcastPlayerContext';
 import { useAudio } from '@/modules/radio/context/AudioContext';
 import { usePodcastPlayer } from '@/modules/podcast/context/PodcastPlayerContext';
@@ -223,7 +224,9 @@ function App() {
     <GlobalAudioManagerProvider>
       <AudioProvider>
         <PodcastPlayerProvider>
-          <AppContent />
+          <RadioExplorerProvider>
+            <AppContent />
+          </RadioExplorerProvider>
         </PodcastPlayerProvider>
       </AudioProvider>
     </GlobalAudioManagerProvider>

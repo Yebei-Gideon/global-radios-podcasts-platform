@@ -248,7 +248,8 @@ export class PodcastService {
       this.logger.log(`Added podcast: ${podcast.title} with ${episodes.length} episodes`);
       return this.toDto(savedPodcast);
     } catch (error) {
-      this.logger.error(`Failed to add podcast from RSS: ${rssUrl}`, error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to add podcast from RSS: ${rssUrl}`, errorMessage);
       throw error;
     }
   }

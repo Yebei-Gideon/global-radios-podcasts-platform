@@ -2,12 +2,9 @@
 	"name": "global-radio-platform",
 	"private": true,
 	"version": "1.0.0",
-	"packageManager": "bun@1.3.8",
-	"scripts": {
-		"install": "cd backend && bun install && cd ../frontend && bun install",
-		"install:all": "cd backend && bun install && cd ../frontend && bun install",
-		"dev:backend": "cd backend && bun run start:dev",
-		"dev:frontend": "cd frontend && bun run dev",
-		"dev": "bash -lc \"cd backend && bun run start:dev & cd ../frontend && bun run dev\""
-	}
+	"packageManager": "bun@1.3.14",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
 }

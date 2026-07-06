@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { BaseRadioProvider } from './base-radio-provider';
 import { RadioProviderName, ProviderRadioResult, RadioProviderSearchParams, RadioProviderConfig } from '../types/radio-search.types';
+import { getErrorMessage } from '../../common/utils/error-message.util';
 
 /**
  * Radio.de / Radio.net Provider
@@ -28,13 +29,13 @@ export class RadioNetProvider implements BaseRadioProvider {
 
   async isAvailable(): Promise<boolean> {
     try {
-      await this.client.get('/search/stationsbykeyword', { 
+      await this.client.get('/search/stationsbykeyword', {
         params: { keyword: 'test', pageindex: 0, pagesize: 1 },
-        timeout: 5000 
+        timeout: 5000
       });
       return true;
     } catch (error) {
-      this.logger.warn(`Radio.net provider unavailable: ${error.message}`);
+      this.logger.warn(`Radio.net provider unavailable: ${getErrorMessage(error)}`);
       return false;
     }
   }
@@ -79,7 +80,7 @@ export class RadioNetProvider implements BaseRadioProvider {
       // Apply tag filter if provided
       if (params.tag) {
         const tag = params.tag.toLowerCase();
-        filtered = filtered.filter(s => 
+        filtered = filtered.filter(s =>
           s.tags?.some(t => t.toLowerCase().includes(tag))
         );
       }
@@ -87,7 +88,7 @@ export class RadioNetProvider implements BaseRadioProvider {
       this.logger.log(`Radio.net provider returned ${filtered.length} stations`);
       return filtered.slice(0, params.limit);
     } catch (error) {
-      this.logger.error(`Radio.net search failed: ${error.message}`);
+      this.logger.error(`Radio.net search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }
@@ -105,7 +106,7 @@ export class RadioNetProvider implements BaseRadioProvider {
       const stations = response.data || [];
       return stations.map((s: any) => this.normalize(s));
     } catch (error) {
-      this.logger.warn(`Radio.net keyword search failed: ${error.message}`);
+      this.logger.warn(`Radio.net keyword search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }
@@ -123,7 +124,7 @@ export class RadioNetProvider implements BaseRadioProvider {
       const stations = response.data || [];
       return stations.map((s: any) => this.normalize(s));
     } catch (error) {
-      this.logger.warn(`Radio.net country search failed: ${error.message}`);
+      this.logger.warn(`Radio.net country search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }
@@ -149,22 +150,22 @@ export class RadioNetProvider implements BaseRadioProvider {
 
   private extractStreamUrl(raw: any): string {
     // Try various possible stream URL fields
-    return raw.streamUrl || 
-           raw.stream_url || 
-           raw.streamUrls?.[0] || 
-           raw.stream || 
+    return raw.streamUrl ||
+      raw.stream_url ||
+      raw.streamUrls?.[0] ||
+      raw.stream ||
            raw.url ||
            `https://stream.radio.net/${raw.id}`;
   }
 
   private extractTags(raw: any): string[] {
     const tags: string[] = [];
-    
+
     if (raw.genre) tags.push(raw.genre);
     if (raw.genres) tags.push(...(Array.isArray(raw.genres) ? raw.genres : [raw.genres]));
     if (raw.category) tags.push(raw.category);
     if (raw.categories) tags.push(...(Array.isArray(raw.categories) ? raw.categories : [raw.categories]));
-    
+
     return tags.filter(Boolean);
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { BaseRadioProvider } from './base-radio-provider';
 import { RadioProviderName, ProviderRadioResult, RadioProviderSearchParams, RadioProviderConfig } from '../types/radio-search.types';
+import { getErrorMessage } from '../../common/utils/error-message.util';
 
 /**
  * Shoutcast Directory Provider
@@ -81,14 +82,14 @@ export class ShoutcastProvider implements BaseRadioProvider {
       });
 
       const stations = response.data?.result || response.data || [];
-      const results = Array.isArray(stations) 
+      const results = Array.isArray(stations)
         ? stations.map((s: any) => this.normalize(s))
         : [];
 
       this.logger.log(`Shoutcast provider returned ${results.length} stations`);
       return results.slice(0, params.limit);
     } catch (error) {
-      this.logger.error(`Shoutcast search failed: ${error.message}`);
+      this.logger.error(`Shoutcast search failed: ${getErrorMessage(error)}`);
       return [];
     }
   }
@@ -116,19 +117,19 @@ export class ShoutcastProvider implements BaseRadioProvider {
     if (raw.StreamUrl || raw.stream_url) {
       return raw.StreamUrl || raw.stream_url;
     }
-    
+
     // Construct Shoutcast stream URL
     const id = raw.ID || raw.id;
     if (id) {
       return `https://yp.shoutcast.com/sbin/tunein-station.pls?id=${id}`;
     }
-    
+
     return raw.Url || raw.url || '';
   }
 
   private extractGenres(raw: any): string[] {
     const genres: string[] = [];
-    
+
     if (raw.Genre) {
       genres.push(...raw.Genre.split(',').map((g: string) => g.trim()));
     }
@@ -138,7 +139,7 @@ export class ShoutcastProvider implements BaseRadioProvider {
     if (raw.Genres) {
       genres.push(...(Array.isArray(raw.Genres) ? raw.Genres : [raw.Genres]));
     }
-    
+
     return genres.filter(Boolean);
   }
 }
