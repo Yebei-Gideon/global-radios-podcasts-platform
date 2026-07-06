@@ -7,7 +7,7 @@
   COPY package.json tsconfig.json ./
   COPY bun.lock ./
 
-# Install ALL dependencies (including @nestjs/cli in devDependencies)
+  # Install ALL dependencies (including @nestjs/cli in devDependencies)
   RUN bun install --no-check
 
   # Copy all source files and migration scripts
@@ -20,7 +20,6 @@
   FROM oven/bun:1.3.8 AS production-deps
   WORKDIR /app
   COPY package.json ./
-  COPY --from=builder /app/bun.lock ./
   RUN bun install --production --no-check
 
   # --- Stage 3: Runtime Stage ---
